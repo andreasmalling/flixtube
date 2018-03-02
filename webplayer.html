@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dash JS player</title>
+    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+    <style>
+        video {
+            width: 640px;
+            height: 360px;
+        }
+    </style>
+</head>
+
+<body>
+<h1>Dash.JS Web player</h1>
+
+<div>
+    <video id="videoPlayer" controls></video><br/>
+
+    <input title="New Seek Position" type="number" id="seekPos">
+    <button id="seekBtn" onclick="seek()">Seek</button>
+
+    <button id="seekRandomBtn" onclick="seekRandom()">I feel lucky</button>
+</div>
+
+<div>
+    <h2>Source</h2>
+    <select title="Select Demo" id="list" onchange="showSelect(this)">
+        <option value="">Select Demo</option>
+    </select>
+
+    <p>or</p>
+
+    <input title="IPFS Hash" type="text" id="videoHash" size="42">
+    <button id="loadHashBtn" onclick="loadHash()">Load hash</button>
+
+    <input title="Local option" type="checkbox" id="localCheck" checked> Local Gateway
+
+    <h3>Source-info</h3>
+    <p id="info">
+        Selected Video: <b>none</b><br/>
+        Manifest url: <b>none</b>
+    </p>
+</div>
+
+<script>
+    let player;
+
+    const publicGate = "https://gateway.ipfs.io/ipfs/";
+    const localGate = "http://127.0.0.1:8080/ipfs/";
+
+    const info = document.getElementById('info');
+    const newPos = document.getElementById('seekPos');
+    const selectList = document.getElementById('list');
+
+    window.onload = bindUI();
+
+    function bindUI() {
+        <!-- Populate select list -->
+        let manifests = [
+            {
+                "URL": "https://bitmovin-a.akamaihd.net/content/MI201109210084_1/mpds/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.mpd",
+                "Video_Name": "Bitmovin (Adaptive)"
+            },
+            {
+                "URL": "https://dash.akamaized.net/envivio/EnvivioDash3/manifest.mpd",
+                "Video_Name": "Dash.JS Quick Start"
+            },
+            {
+                "URL": "videos/src_3000.mpd",
+                "Video_Name": "Steamed Hams"
+            },
+            {
+                "URL": "videos/ipfs_bitmovin.mpd",
+                "Video_Name": "Bitmovin (IPFS)"
+            },
+        ];
+
+        for (let i = 0; i < manifests.length; i++) {
+            selectList.innerHTML = selectList.innerHTML +
+                '<option value="' + manifests[i]['URL'] + '">' + manifests[i]['Video_Name'] + '</option>';
+        }
+
+        <!-- trigger seek with enter in input field -->
+        newPos.addEventListener("keyup", function(event) {
+            event.preventDefault();
+            if (event.keyCode === 13) {
+                seek();
+            }
+        });
+    }
+
+    function showSelect(list) {
+        let video_name = list.options[list.selectedIndex].text;
+        let url = list.value;
+        show(url, video_name)
+    }
+
+    function show(url, video_name) {
+        info.innerHTML = 'Selected Video: <b>' +
+            video_name +
+            '</b> </br>' +
+            'Manifest url: <b>' +
+            url + '</b>';
+        player = dashjs.MediaPlayer().create();
+        player.initialize(document.querySelector("#videoPlayer"), url, true);
+    }
+
+    function seek() {
+        let max = player.duration();
+        let pos = newPos.value;
+        if (pos <= max) {
+            player.seek(Number(pos));
+        } else {
+            console.error("Position is invalid");
+        }
+    }
+
+    function seekRandom() {
+        player.seek(Math.random() * player.duration());
+    }
+
+    function loadHash() {
+        let gateway;
+
+        if (document.getElementById('localCheck').checked) {
+            gateway = localGate;
+        } else {
+            gateway = publicGate;
+        }
+
+        let videoHash = document.getElementById('videoHash').value;
+        let url = gateway + videoHash;
+        show(url, videoHash);
+    }
+</script>
+</body>
+</html>
