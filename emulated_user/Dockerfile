@@ -1,14 +1,15 @@
-FROM python:3
+FROM andreasmalling/flixtube_init
 
 WORKDIR /usr/src/app
-
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
 COPY . .
 
-# FIXME: Add bin (drivers) to path 
-# (https://splinter.readthedocs.io/en/latest/drivers/chrome.html#linux-common-steps-for-32-and-64bits)
+# Install Splinter etc.
+RUN pip3 install --no-cache-dir -r requirements.txt
 
-# CMD [ "python", "./splinter.py" ]
-CMD [ "python", "./hello.py" ]
+# Add bin folder to path
+ENV PATH="/usr/src/app/bin:${PATH}"
+
+ENTRYPOINT [ "python3" ]
+
+CMD [ "./emulated_user.py" ]
