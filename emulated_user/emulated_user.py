@@ -2,50 +2,55 @@ from splinter import Browser
 from time import sleep
 import subprocess
 
-# Setup IPFS
-subprocess.run(["ipfs", "init"])
-subprocess.Popen(["ipfs", "daemon"])
+class User:
 
-browser = Browser('chrome')
+    def setup_ipfs(self):
+        subprocess.run(["ipfs", "init"])
+        subprocess.Popen(["ipfs", "daemon"])
 
-url='http://127.0.0.1:8080/ipfs/QmPYSNtQ5XMp88zZJVNYSLafjQZXHGN5T3pht71SdukVcG'
+    def __init__(self, isHeadless=True):
+        self.setup_ipfs()
 
-browser.visit(url)
+        self.browser = Browser('chrome', headless=isHeadless)
 
-# Get elements
-player = browser.find_by_id("videoPlayer").first
-demo = browser.find_option_by_text("IPFS").first
-hashInput = browser.find_by_id('videoHash').first
-hashBtn = browser.find_by_id("loadHashBtn").first
-localCheck = browser.find_by_id("localCheck").first
-seekPos = browser.find_by_id("seekPos").first
-seekBtn = browser.find_by_id("seekBtn").first
-randBtn = browser.find_by_id("seekRandomBtn").first
+    def visit(self, url):
+        self.browser.visit(url)
+        self.init_elements()
 
-# Select from list
-# demo.click()
-# sleep(2)
+    def visit_hash(self, hash):
+        self.browser.visit('http://127.0.0.1:8080/ipfs/' + hash)
+        self.init_elements()
 
-# Access IPFS hosted mpd
-hash = "QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs"
-hashInput.fill(hash)
-hashBtn.click()
+    def init_elements(self):
+        self.player = self.browser.find_by_id("videoPlayer").first
+        self.hashInput = self.browser.find_by_id('videoHash').first
+        self.hashBtn = self.browser.find_by_id("loadHashBtn").first
+        self.seekPos = self.browser.find_by_id("seekPos").first
+        self.seekBtn = self.browser.find_by_id("seekBtn").first
+        self.randBtn = self.browser.find_by_id("seekRandomBtn").first
 
+    def execute(self, manifest):
+        # Access IPFS hosted mpd
+        self.hashInput.fill(manifest)
+        self.hashBtn.click()
 
-# # Skip to 2:00
-# seekPos.fill(120)
-# seekBtn.click()
-#
-# pos = player["currentTime"]
-#
-# assert (pos == '120')
-#
-#
-# sleep(3)
-#
-# # Skip to random position
-# randBtn.click()
-#
-sleep(600)
+        sleep(600)
 
-#browser.quit()
+        # Skip to 2:00
+        # seekPos.fill(120)
+        # seekBtn.click()
+        #
+        # pos = player["currentTime"]
+        #
+        # assert (pos == '120')
+        #
+        # sleep(3)
+        #
+        # # Skip to random position
+        # randBtn.click()
+        #
+        #browser.quit()
+
+user = User(False)
+user.visit_hash("QmPYSNtQ5XMp88zZJVNYSLafjQZXHGN5T3pht71SdukVcG")
+user.execute("QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs")
