@@ -77,8 +77,23 @@ m = re.search("added (.+?) " + audio_folder_name + "\n", out.decode("utf-8"))
 if m:
     audio_hash = m.group(1)
 
-print("video hash:", video_hash, "audio hash:", audio_hash)
-
 # 2) Edit mpd
-# 3) Add mpd to IPFS
 
+mpd = minidom.parse(FILENAME + "_" + str(SEGDURATION) + ".mpd")
+adaptionSets = mpd.getElementsByTagName("AdaptationSet")
+for a in adaptionSets:
+    if (a.getElementsByTagName("Representation")[0].attributes["id"].value == "video"):
+        a.getElementsByTagName("SegmentTemplate")[0].setAttribute("media",          video_hash + "/Segment_$Number$.m4s")
+        a.getElementsByTagName("SegmentTemplate")[0].setAttribute("initialization", video_hash + "/Segment_0.mp4")
+    elif (a.getElementsByTagName("Representation")[0].attributes["id"].value == "audio"):
+        a.getElementsByTagName("SegmentTemplate")[0].setAttribute("media",          audio_hash + "/Segment_$Number$.m4s")
+        a.getElementsByTagName("SegmentTemplate")[0].setAttribute("initialization", audio_hash + "/Segment_0.mp4")
+# write to file
+f = open("fixed.mpd", "w")
+mpd.writexml(f)
+f.close()
+
+
+# 3) Add mpd to IPFS
+print("")
+subprocess.call(["ipfs", "add", "fixed.mpd"])
