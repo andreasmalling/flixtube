@@ -14,7 +14,7 @@ FRAMERATE = 25
 KEYFRAMERATE = (SEGDURATION * FRAMERATE) / 1000
 
 FILENAME = os.path.splitext(INPUTFILE)[0]
-ENCODING = FILENAME + "_key_" + KEYFRAMERATE + ".mp4"
+ENCODING = FILENAME + "_key_" + str(KEYFRAMERATE) + ".mp4"
 MPD = str(SEGDURATION) + FILENAME
 SEGS = MPD + "_$RepresentationID$/Segment_$Number$$Init=0$"
 
