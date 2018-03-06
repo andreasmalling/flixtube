@@ -68,3 +68,19 @@ function calculateHTTPMetrics(type, requests) {
     }
     return null;
 }
+
+function updateMetrics(player, streaminfo, type) {
+    var metrics = player.getMetricsFor(type);
+    var dashMetrics = player.getDashMetrics();
+
+    if (metrics && dashMetrics && streamInfo) {
+        var periodIdx = streamInfo.index;
+        var repSwitch = dashMetrics.getCurrentRepresentationSwitch(metrics);
+        var bufferLevel = dashMetrics.getCurrentBufferLevel(metrics);
+        var maxIndex = dashMetrics.getMaxIndexForBufferType(type, periodIdx);
+        var index = player.getQualityFor(type);
+        var bitrate = repSwitch ? Math.round(dashMetrics.getBandwidthForRepresentation(repSwitch.to, periodIdx) / 1000) : NaN;
+        var droppedFPS = dashMetrics.getCurrentDroppedFrames(metrics) ? dashMetrics.getCurrentDroppedFrames(metrics).droppedFrames : 0;
+        var httpMetrics = calculateHTTPMetrics(type, dashMetrics.getHttpRequests(metrics));
+    }
+}
