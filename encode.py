@@ -1,10 +1,10 @@
 # Translate encode.sh to python
 import sys
 import os
-import subprocess
 import re
 from xml.dom import minidom
 import subprocess
+from ffprobe3 import FFProbe
 
 print("v0.5\n")
 
@@ -15,13 +15,17 @@ if (len(sys.argv) < 2):
 SEGDURATION = int(sys.argv[1])
 INPUTFILE = sys.argv[2]
 
-FRAMERATE = 29.97
+# probe metadata
+metadata = FFProbe(INPUTFILE)
+for stream in metadata.streams:
+    if stream.is_video():
+        FRAMERATE = stream.frames() / stream.duration_seconds()
 
 KEYFRAMERATE = (SEGDURATION * FRAMERATE) / 1000
 
 FILENAME = os.path.splitext(os.path.basename(INPUTFILE))[0]
 ENCODING = FILENAME + "_key_" + str(KEYFRAMERATE) + ".mp4"
-MPD = str(SEGDURATION) + "_" + FILENAME
+MPD = FILENAME + "_" + str(SEGDURATION)
 SEGS = MPD + "_$RepresentationID$/Segment_$Number$$Init=0$"
 
 # Clean up previous runs with same parameters
