@@ -45,14 +45,16 @@
 </div>
 
 <script>
-    let player;
-
     const publicGate = "https://gateway.ipfs.io/ipfs/";
     const localGate = "http://127.0.0.1:8080/ipfs/";
+
+    let player;
+    let gateway = localGate;
 
     const info = document.getElementById('info');
     const newPos = document.getElementById('seekPos');
     const selectList = document.getElementById('list');
+    const localCheck = document.getElementById('localCheck');
 
     window.onload = bindUI();
 
@@ -84,6 +86,14 @@
             if (event.keyCode === 13) {
                 seek();
             }
+        });
+
+        localCheck.addEventListener("change", function (event) {
+            if (this.checked) {
+                gateway = localGate;
+            } else {
+                gateway = publicGate;
+        }
         });
     }
 
@@ -118,18 +128,11 @@
     }
 
     function loadHash() {
-        let gateway;
-
-        if (document.getElementById('localCheck').checked) {
-            gateway = localGate;
-        } else {
-            gateway = publicGate;
-        }
-
         let videoHash = document.getElementById('videoHash').value;
         let url = gateway + videoHash;
         show(url, videoHash);
     }
 </script>
+<script src="stats/Metrics.js"></script>
 </body>
 </html>
