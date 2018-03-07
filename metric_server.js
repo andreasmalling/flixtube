@@ -7,10 +7,15 @@ var path;
 
 const express = require("express");
 const fileUpload = require("express-fileupload");
+const bodyParser = require('body-parser');
+var MongoClient = require('mongodb').MongoClient;
+var mongo_url = "mongodb://localhost:27017/mydb";
 const app = express();
 
 // default options
 app.use(fileUpload());
+
+app.use(bodyParser.json());
 
 app.get("/", function (ignore, res) {   // ignore = req
     res.writeHead(200, {"Content-Type": "text/html"});
@@ -42,6 +47,13 @@ app.post("/upload", function (req, res, ignore) {   // ignore = next (?)
 });
 
 app.post("/metrics", function (req, res, ignore) {   // ignore = next (?)
+    console.log(req.body);
+    res.send(req.body);
 });
 
 app.listen(8081);
+MongoClient.connect(mongo_url, function(err, db) {
+    if (err) throw err;
+    console.log("Database created!");
+    db.close();
+});
