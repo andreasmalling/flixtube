@@ -120,8 +120,7 @@
             clearInterval(metricsTimer);
             chartCount = 0;
             metricsTimer = setInterval(function () {
-                updateMetrics(player, false, 'video');
-                updateMetrics(player, false, 'audio');
+                updateMetrics(player, false);
                 chartCount++;
             }, updateMetricsInterval);
         });

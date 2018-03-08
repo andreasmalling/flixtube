@@ -69,17 +69,29 @@ function calculateHTTPMetrics(type, requests) {
     return null;
 }
 
-function updateMetrics(player, streaminfo, type) {
-    var metrics = player.getMetricsFor(type);
-    var dashMetrics = player.getDashMetrics();
+function updateMetrics(player, streamInfo) {
+    const dashMetrics = player.getDashMetrics();
+    const types = ["video", "audio"];
+    const id = "1234";
+    var res = {
+        "id" : id,
+        "time" : Date.now(),
+        "latency": {"video":"", "audio":""},
+        "download": {"video":"", "audio":""},
+        "ratio": {"video":"", "audio":""}};
+    var metrics;
+    var httpMetrics;
 
-    if (!(metrics && dashMetrics)) {
-        return;
+    for (i = 0; i < types.length; i++) {
+        metrics = player.getMetricsFor(types[i]);
+        httpMetrics = calculateHTTPMetrics(types[i], dashMetrics.getHttpRequests(metrics));
+        res.latency[types[i]] = httpMetrics.latency[types[i]];
+        res.download[types[i]] = httpMetrics.download[types[i]];
+        res.ratio[types[i]] = httpMetrics.ratio[types[i]];
     }
 
-    var httpMetrics = calculateHTTPMetrics(type, dashMetrics.getHttpRequests(metrics));
-    sendJson("http://localhost:8081/metrics", httpMetrics)
-        .then((res) => console.log("SendJson Response:", res))
+    sendJson("http://localhost:8081/metrics", res)
+        .then((jsonRes) => console.log("SendJson Response:", jsonRes))
         .catch((error) => console.error(error));
 
     /*
@@ -98,14 +110,11 @@ function updateMetrics(player, streaminfo, type) {
 function sendJson(url, data) {
     return fetch(url, {
         body: JSON.stringify(data),
-        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-        headers: {
-            "content-type": "application/json"
-        },
+        cache: "no-cache",
+        headers: {"content-type": "application/json"},
         method: "POST",
-        mode: "cors", // no-cors, *same-origin
-        redirect: "follow", // *manual, error
-        referrer: "no-referrer", // *client
-    })
-        .then(response => response.json()) // parses response to JSON
+        mode: "cors",
+        redirect: "follow",
+        referrer: "no-referrer"
+    }).then((response) => response.json()) // parses response to JSON
 }
