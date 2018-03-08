@@ -1,7 +1,7 @@
 function calculateHTTPMetrics(type, requests) {
-    var latency = {},
-        download = {},
-        ratio = {};
+    var latency = {};
+    var download = {};
+    var ratio = {};
 
     var requestWindow = requests.slice(-20).filter(function (req) {
         return req.responsecode >= 200 && req.responsecode < 300 && req.type === 'MediaSegment' && req._stream === type && !!req._mediaduration;
@@ -73,6 +73,16 @@ function updateMetrics(player, streaminfo, type) {
     var metrics = player.getMetricsFor(type);
     var dashMetrics = player.getDashMetrics();
 
+    if (!(metrics && dashMetrics)) {
+        return;
+    }
+
+    var httpMetrics = calculateHTTPMetrics(type, dashMetrics.getHttpRequests(metrics));
+    sendJson("http://localhost:8081/metrics", httpMetrics)
+        .then((res) => console.log("SendJson Response:", res))
+        .catch((error) => console.error(error));
+
+    /*
     if (metrics && dashMetrics && streamInfo) {
         var periodIdx = streamInfo.index;
         var repSwitch = dashMetrics.getCurrentRepresentationSwitch(metrics);
@@ -81,6 +91,21 @@ function updateMetrics(player, streaminfo, type) {
         var index = player.getQualityFor(type);
         var bitrate = repSwitch ? Math.round(dashMetrics.getBandwidthForRepresentation(repSwitch.to, periodIdx) / 1000) : NaN;
         var droppedFPS = dashMetrics.getCurrentDroppedFrames(metrics) ? dashMetrics.getCurrentDroppedFrames(metrics).droppedFrames : 0;
-        var httpMetrics = calculateHTTPMetrics(type, dashMetrics.getHttpRequests(metrics));
     }
+    */
+}
+
+function sendJson(url, data) {
+    return fetch(url, {
+        body: JSON.stringify(data),
+        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+        headers: {
+            "content-type": "application/json"
+        },
+        method: "POST",
+        mode: "cors", // no-cors, *same-origin
+        redirect: "follow", // *manual, error
+        referrer: "no-referrer", // *client
+    })
+        .then(response => response.json()) // parses response to JSON
 }

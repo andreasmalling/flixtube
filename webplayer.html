@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Dash JS player</title>
-    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+    <script src="https://cdn.dashjs.org/latest/dash.all.min.js" type="text/javascript"></script>
+    <script src="stats/Metrics.js" type="text/javascript"></script>
+
     <style>
         video {
             width: 640px;
@@ -50,6 +52,9 @@
 
     let player;
     let gateway = localGate;
+    const updateMetricsInterval = 1000;
+    let chartCount;
+    let metricsTimer;
 
     const info = document.getElementById('info');
     const newPos = document.getElementById('seekPos');
@@ -111,6 +116,15 @@
             url + '</b>';
         player = dashjs.MediaPlayer().create();
         player.initialize(document.querySelector("#videoPlayer"), url, true);
+        player.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, function (e) { /* jshint ignore:line */
+            clearInterval(metricsTimer);
+            chartCount = 0;
+            metricsTimer = setInterval(function () {
+                updateMetrics(player, false, 'video');
+                updateMetrics(player, false, 'audio');
+                chartCount++;
+            }, updateMetricsInterval);
+        });
     }
 
     function seek() {
@@ -133,6 +147,5 @@
         show(url, videoHash);
     }
 </script>
-<script src="stats/Metrics.js"></script>
 </body>
 </html>
