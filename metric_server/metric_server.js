@@ -1,19 +1,13 @@
 "use strict";
 
-const ipfsAPI = require("ipfs-api");
-const ipfs = ipfsAPI("localhost", "5001", {protocol: "http"});
-
-var path;
+// const ipfsAPI = require("ipfs-api");
+// const ipfs = ipfsAPI("localhost", "5001", {protocol: "http"});
 
 const express = require("express");
-const fileUpload = require("express-fileupload");
 const bodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
 const mongo_url = "mongodb://localhost:27017/flixtube_db";
 const app = express();
-
-// default options
-app.use(fileUpload());
 
 app.use(bodyParser.json());
 
@@ -24,51 +18,40 @@ app.use(function (ignore, res, next) {  //ignore req
     next();
 });
 
-app.get("/", function (ignore, res) {   // ignore = req
-    res.writeHead(200, {"Content-Type": "text/html"});
-    res.write("<form ref=\"uploadForm\" id=\"uploadForm\" action=\"upload\" method=\"post\" encType=\"multipart/form-data\">");
-    res.write("<input type=\"file\" name=\"sampleFile\"><br>");
-    res.write("<input type=\"submit\">");
-    res.write("</form>");
-    return res.end();
-});
-
-app.post("/upload", function (req, res, ignore) {   // ignore = next (?)
-    if (!req.files) {
-        return res.status(400).send("No files were uploaded.");
-    }
-
-    ipfs.add(req.files.sampleFile.data, function (err, files) {
-        if (err) {
-            console.log(err);
-        }
-
-        console.log(files);
-        files.forEach(function (file) {
-            path = file.path;
-            console.log(path);
-        });
-        res.send("File uploaded! Available at <a href=\"http://ipfs.io/ipfs/" + path + "\">" + path + "</a>");
-    });
-
-});
-
 //mongo db vars
 var database = null;
 var flixtube_db = null;
 
+function insertInDatabase(collection, jsonElem) {
+    flixtube_db.collection(collection).insertOne(jsonElem, function (err, ignore) { // ignore res
+        if (err) {
+            throw err;
+        }
+        console.log("inserted\n" + JSON.stringify(jsonElem));
+    });
+}
 
 app.post("/metrics", function (req, res, ignore) {   // ignore = next (?)
     var json = req.body;
-    console.log(json);
     if (flixtube_db !== null) {
-        //do db things
-        flixtube_db.collection("metrics").insertOne(json, function (err, ignore) { // ignore res
-            if (err) {
-                throw err;
-            }
-            console.log("inserted document in db");
-        });
+        var id = json.id;
+        var time = json.time;
+
+        //latency
+        json.latency.time = time;
+        json.latency.id = id;
+        insertInDatabase("latency", json.latency);
+
+        //download
+        json.download.time = time;
+        json.download.id = id;
+        insertInDatabase("download", json.download);
+
+        //ratio
+        json.ratio.time = time;
+        json.ratio.id = id;
+        insertInDatabase("ratio", json.ratio);
+
     }
     res.send(req.body);
 });
@@ -77,19 +60,25 @@ app.listen(8081);
 
 // create mongo db collection instance
 
+function createCollection(name) {
+    flixtube_db.createCollection(name, function (err, ignore) { // ignore res
+        if (err) {
+            throw err;
+        }
+        console.log(name + " collection created!");
+    });
+}
+
 MongoClient.connect(mongo_url, function (err, db) {
     if (err) {
         throw err;
     }
-    database = db;
     var dbo = db.db("flixtube_db");
+    database = db;
     flixtube_db = dbo;
-    dbo.createCollection("metrics", function (err, ignore) { // ignore res
-        if (err) {
-            throw err;
-        }
-        console.log("collection created!");
-    });
+    createCollection("latency");
+    createCollection("download");
+    createCollection("ratio");
 });
 
 
