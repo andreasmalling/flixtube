@@ -1,11 +1,13 @@
-FROM mongo:3.6.3-jessie
+FROM node:9.8.0
 
 WORKDIR /usr/src/app
-
-RUN sudo apt-get update && sudo apt-get install -y 	\
-	nodejs
-	npm
 
 COPY . .
 
 RUN npm install
+
+ENTRYPOINT [ "node" ]
+
+CMD [ "./metric_server.js" ]
+
+

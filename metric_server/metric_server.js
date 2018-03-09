@@ -6,7 +6,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
-const mongo_url = "mongodb://localhost:27017/flixtube_db";
+const mongo_url = "mongodb://mongo:27017/flixtube_db";
 const app = express();
 
 app.use(bodyParser.json());
