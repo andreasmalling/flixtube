@@ -31,12 +31,15 @@ SEGS = MPD + "_$RepresentationID$/Segment_$Number$$Init=0$"
 # Clean up previous runs with same parameters
 subprocess.run(["rm", "-r", MPD + "*"])
 
+print("Calculated KEYFRAMERATE:", KEYFRAMERATE)
+
 # (Re-)encode (https://stackoverflow.com/a/30982414)
 subprocess.run(["ffmpeg",
+				"-loglevel", "error",
                 "-i", INPUTFILE,
                 "-c:v", "libx264",
                 "-x264-params", "keyint=" + str(KEYFRAMERATE) + ":scenecut=0",
-                "-c:a", "libvo_aacenc",
+                "-strict", "-2", "-c:a", "aac",
                 ENCODING])
 
 # Notes on encoding:
@@ -66,6 +69,9 @@ subprocess.run(["MP4Box",
 video_folder_name = FILENAME + "_" + str(SEGDURATION) + "_video"
 audio_folder_name = FILENAME + "_" + str(SEGDURATION) + "_audio"
 
+if not(os.path.exists(video_folder_name) and os.path.exists(audio_folder_name) and os.path.exists(MPD + ".mpd")):
+	print("Files not generated for upload to IPFS")
+	sys.exit(2)
 
 # upload video
 process = subprocess.Popen(["ipfs", "add", "-r", video_folder_name], stdout=subprocess.PIPE)
@@ -83,7 +89,11 @@ if m:
 
 # 2) Edit mpd
 
-mpd = minidom.parse(FILENAME + "_" + str(SEGDURATION) + ".mpd")
+if not('audio_hash' in globals() and 'vidleo_hash' in globals()):
+    print("Files not uploaded to IPFS")
+    sys.exit(3)
+
+mpd = minidom.parse(MPD + ".mpd")
 adaptionSets = mpd.getElementsByTagName("AdaptationSet")
 for a in adaptionSets:
     if (a.getElementsByTagName("Representation")[0].attributes["id"].value == "video"):
@@ -93,11 +103,11 @@ for a in adaptionSets:
         a.getElementsByTagName("SegmentTemplate")[0].setAttribute("media",          audio_hash + "/Segment_$Number$.m4s")
         a.getElementsByTagName("SegmentTemplate")[0].setAttribute("initialization", audio_hash + "/Segment_0.mp4")
 # write to file
-f = open("fixed.mpd", "w")
+f = open(MPD + "_fixed.mpd", "w")
 mpd.writexml(f)
 f.close()
 
 
 # 3) Add mpd to IPFS
 print("")
-subprocess.call(["ipfs", "add", "fixed.mpd"])
+subprocess.call(["ipfs", "add", MPD + "_fixed.mpd"])

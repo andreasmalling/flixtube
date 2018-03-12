@@ -41,8 +41,8 @@
 
     <h3>Source-info</h3>
     <p id="info">
-        Selected Video: <b>none</b><br/>
-        Manifest url: <b>none</b>
+        <b>Selected Video:</b> none<br/>
+        <b>Manifest url:</b> none
     </p>
 </div>
 
@@ -76,7 +76,11 @@
             },
             {
                 "URL": localGate + "QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs",
-                "Video_Name": "IPFS"
+                "Video_Name": "Bitmovin (IPFS)"
+            },
+            {
+                "URL": localGate + "QmZ5BRtWxuVPWTSfDdX7d3LQhdM6D7fjJYW9Tacw6fbX3U",
+                "Video_Name": "SH (IPFS, Seg: 3000)"
             },
         ];
 
@@ -109,11 +113,11 @@
     }
 
     function show(url, video_name) {
-        info.innerHTML = 'Selected Video: <b>' +
+        info.innerHTML = '<b>Selected Video: </b>' +
             video_name +
-            '</b> </br>' +
-            'Manifest url: <b>' +
-            url + '</b>';
+            '</br>' +
+            '<b>Manifest url: </b><a href="' +
+            url + '" target="_blank">' + url + '</a>';
         player = dashjs.MediaPlayer().create();
         player.initialize(document.querySelector("#videoPlayer"), url, true);
         player.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, function (e) { /* jshint ignore:line */
