@@ -1,110 +1,66 @@
-function calculateHTTPMetrics(type, requests) {
-    var latency = {};
-    var download = {};
-    var ratio = {};
+"use strict";
 
-    var requestWindow = requests.slice(-20).filter(function (req) {
-        return req.responsecode >= 200 && req.responsecode < 300 && req.type === 'MediaSegment' && req._stream === type && !!req._mediaduration;
-    }).slice(-4);
+var index = {video: 0, audio: 0};
+const stream = ["video", "audio"];
 
-    if (requestWindow.length > 0) {
-        var latencyTimes = requestWindow.map(function (req) {
-            return Math.abs(req.tresponse.getTime() - req.trequest.getTime()) / 1000;
-        });
+function calculateHTTPMetrics(streamtype, requests) {
+    var reqs = requests.slice(index[streamtype]);
+    var res = [];
 
-        latency[type] = {
-            average: latencyTimes.reduce(function (l, r) {
-                return l + r;
-            }) / latencyTimes.length,
-            high: latencyTimes.reduce(function (l, r) {
-                return l < r ? r : l;
-            }),
-            low: latencyTimes.reduce(function (l, r) {
-                return l < r ? l : r;
-            }),
-            count: latencyTimes.length
-        };
+    reqs.forEach( function (req) {
+        var url = req.url;
+        var timestamp = req.trequest.getTime();
+        var responseCode = req.responsecode;
+        var type = req.type;
+        var latency = NaN;
+        var download = NaN;
+        var ratio = NaN;
 
-        var downloadTimes = requestWindow.map(function (req) {
-            return Math.abs(req._tfinish.getTime() - req.tresponse.getTime()) / 1000;
-        });
+        if (responseCode >= 200 && responseCode < 300) {
+            latency = Math.abs(req.tresponse.getTime() - timestamp);
+            download = Math.abs(req._tfinish.getTime() - req.tresponse.getTime());
+            ratio = req._mediaduration / download;
+        }
 
-        download[type] = {
-            average: downloadTimes.reduce(function (l, r) {
-                return l + r;
-            }) / downloadTimes.length,
-            high: downloadTimes.reduce(function (l, r) {
-                return l < r ? r : l;
-            }),
-            low: downloadTimes.reduce(function (l, r) {
-                return l < r ? l : r;
-            }),
-            count: downloadTimes.length
-        };
-
-        var durationTimes = requestWindow.map(function (req) {
-            return req._mediaduration;
-        });
-
-        ratio[type] = {
-            average: (durationTimes.reduce(function (l, r) {
-                return l + r;
-            }) / downloadTimes.length) / download[type].average,
-            high: durationTimes.reduce(function (l, r) {
-                return l < r ? r : l;
-            }) / download[type].low,
-            low: durationTimes.reduce(function (l, r) {
-                return l < r ? l : r;
-            }) / download[type].high,
-            count: durationTimes.length
-        };
-
-        return {
+        res.push({
+            url: url,
+            timestamp: timestamp,
+            type: type,
+            responsecode: responseCode,
             latency: latency,
             download: download,
             ratio: ratio
-        };
+        });
 
-    }
-    return null;
+    });
+
+    index[streamtype] = requests.length;
+    return res;
 }
 
-function updateMetrics(player, streamInfo) {
-    const dashMetrics = player.getDashMetrics();
-    const types = ["video", "audio"];
-    const id = "1234";
+function updateMetrics(id, player, streamInfo) {
     var res = {
         "id" : id,
-        "time" : Date.now(),
-        "latency": {"video":"", "audio":""},
-        "download": {"video":"", "audio":""},
-        "ratio": {"video":"", "audio":""}};
-    var metrics;
-    var httpMetrics;
+        "video" : "",
+        "audio": ""
+    };
 
-    for (i = 0; i < types.length; i++) {
-        metrics = player.getMetricsFor(types[i]);
-        httpMetrics = calculateHTTPMetrics(types[i], dashMetrics.getHttpRequests(metrics));
-        res.latency[types[i]] = httpMetrics.latency[types[i]];
-        res.download[types[i]] = httpMetrics.download[types[i]];
-        res.ratio[types[i]] = httpMetrics.ratio[types[i]];
+    var updated = false;
+    stream.forEach(function (streamType) {
+        var metrics = player.getMetricsFor(streamType);
+        res[streamType] = calculateHTTPMetrics(streamType, metrics.HttpList);
+        if (res[streamType].length > 0) {
+            updated = true;
+        }
+    });
+
+    if (updated) {
+        sendJson("http://localhost:8081/metrics", res)
+            .then((jsonRes) => console.log("SendJson Response:", jsonRes))
+            .catch((error) => console.error(res));
     }
 
-    sendJson("http://localhost:8081/metrics", res)
-        .then((jsonRes) => console.log("SendJson Response:", jsonRes))
-        .catch((error) => console.error(error));
-
-    /*
-    if (metrics && dashMetrics && streamInfo) {
-        var periodIdx = streamInfo.index;
-        var repSwitch = dashMetrics.getCurrentRepresentationSwitch(metrics);
-        var bufferLevel = dashMetrics.getCurrentBufferLevel(metrics);
-        var maxIndex = dashMetrics.getMaxIndexForBufferType(type, periodIdx);
-        var index = player.getQualityFor(type);
-        var bitrate = repSwitch ? Math.round(dashMetrics.getBandwidthForRepresentation(repSwitch.to, periodIdx) / 1000) : NaN;
-        var droppedFPS = dashMetrics.getCurrentDroppedFrames(metrics) ? dashMetrics.getCurrentDroppedFrames(metrics).droppedFrames : 0;
-    }
-    */
+    // TODO: Add buffer state?
 }
 
 function sendJson(url, data) {
