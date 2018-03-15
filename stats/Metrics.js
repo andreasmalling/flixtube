@@ -6,6 +6,32 @@ var index = {video: 0, audio: 0};
 var segmentPattern = /Segment_([0-9]+)/;
 var mpdPattern = /ip[fn]s\/[0-9a-zA-Z]+/;
 
+var waitElement = {stream: "", time: 0}
+var isWaiting = false;
+
+function waitStart(streamType) {
+    waitElement.time = Date.now();
+    waitElement.stream = streamType;
+    isWaiting = true;
+}
+
+function waitStop(id, player) {
+    if (isWaiting) {
+        var res = {
+            resume: Date.now(),
+            stall: waitElement.time,
+            stream: waitElement.stream,
+            mpd: player.getSource().match(mpdPattern)[0],
+            ip: ip
+        };
+
+        isWaiting = false;
+
+        sendJson("http://localhost:8081/metrics/wait", res)
+            .then((response) => console.log("Wait Server Response", response))
+            .catch((error) => console.error("Wait Server Error", res, error));
+    }
+}
 
 function updateMetrics(id, player, streamInfo) {
     var res = {
@@ -59,8 +85,8 @@ function updateMetrics(id, player, streamInfo) {
 
     if (updated) {
         sendJson("http://localhost:8081/metrics", res)
-            .then((jsonRes) => console.log("SendJson Response:", jsonRes))
-            .catch((error) => console.error(res));
+            .then((response) => console.log("Metric Server Response", response))
+            .catch((error) => console.error("Metric Server Error", res, error));
     }
 
     // TODO: Add buffer state?
@@ -75,5 +101,5 @@ function sendJson(url, data) {
         mode: "cors",
         redirect: "follow",
         referrer: "no-referrer"
-    }).then((response) => response.json()) // parses response to JSON
+    })//.then((response) => response.json()) // parses response to JSON
 }
