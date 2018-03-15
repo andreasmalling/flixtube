@@ -3,6 +3,9 @@
 const stream = ["video", "audio"];
 var index = {video: 0, audio: 0};
 
+var segmentPattern = /Segment_([0-9]+)/;
+var mpdPattern = /ip[fn]s\/[0-9a-zA-Z]+/;
+
 
 function updateMetrics(id, player, streamInfo) {
     var res = {
@@ -33,8 +36,9 @@ function updateMetrics(id, player, streamInfo) {
             }
 
             streamList.push({
-                id: id,
-                url: url,
+                ip: id,
+                mpd: player.getSource().match(mpdPattern)[0],
+                seg: url.match(segmentPattern)[1],
                 timestamp: timestamp,
                 type: type,
                 responsecode: responseCode,
