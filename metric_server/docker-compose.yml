@@ -6,16 +6,15 @@ services:
         ports:
           - "8081:8081"
 
+        restart: always
+
         # Dependant on the 'mongo' container running, since it's our storage
         depends_on:
             - mongo
     mongo:
         image: mongo:3.6.3
 
-        #ports:
-        #  - "27017:27017"
-        # Local mount of database, so data is persistent and available between containers
         volumes:
-            - /data/db
-        # Mongod commands
+          - ./data:/data/db
+
         command: --smallfiles --noprealloc
