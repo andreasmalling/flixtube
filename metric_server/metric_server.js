@@ -9,6 +9,9 @@ const MongoClient = require("mongodb").MongoClient;
 const mongo_url = "mongodb://mongo:27017/flixtube_db";
 const app = express();
 
+const VIDEOCOLLECTION = "video";
+const AUDIOCOLLECTION = "audio";
+
 app.use(bodyParser.json());
 
 // Allow CORS
@@ -31,27 +34,22 @@ function insertInDatabase(collection, jsonElem) {
     });
 }
 
+app.get("/", function (req, res, next) {
+   res.send("IT JUST WORKS");
+});
+
+
 app.post("/metrics", function (req, res, ignore) {   // ignore = next (?)
     var json = req.body;
     if (flixtube_db !== null) {
-        var id = json.id;
-        var time = json.time;
 
-        //latency
-        json.latency.time = time;
-        json.latency.id = id;
-        insertInDatabase("latency", json.latency);
+        json.audio.forEach(function (elem) {
+            insertInDatabase(AUDIOCOLLECTION, elem);
+        });
 
-        //download
-        json.download.time = time;
-        json.download.id = id;
-        insertInDatabase("download", json.download);
-
-        //ratio
-        json.ratio.time = time;
-        json.ratio.id = id;
-        insertInDatabase("ratio", json.ratio);
-
+        json.video.forEach(function (elem) {
+            insertInDatabase(VIDEOCOLLECTION, elem);
+        });
     }
     res.send(req.body);
 });
@@ -76,9 +74,8 @@ MongoClient.connect(mongo_url, function (err, db) {
     var dbo = db.db("flixtube_db");
     database = db;
     flixtube_db = dbo;
-    createCollection("latency");
-    createCollection("download");
-    createCollection("ratio");
+    createCollection(VIDEOCOLLECTION);
+    createCollection(AUDIOCOLLECTION);
 });
 
 
