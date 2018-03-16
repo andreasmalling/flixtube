@@ -28,15 +28,15 @@ function waitStop(id, player) {
         isWaiting = false;
 
         sendJson("http://localhost:8081/metrics/wait", res)
-            .then((response) => console.log("Wait Server Response", response))
+            .then((response) => console.log("Wait Server Response", res, response.text()))
             .catch((error) => console.error("Wait Server Error", res, error));
     }
 }
 
 function updateMetrics(id, player, streamInfo) {
     var res = {
-        "video" : "",
-        "audio" : ""
+        "video" : [],
+        "audio" : []
     };
 
     var updated = false;
@@ -85,7 +85,7 @@ function updateMetrics(id, player, streamInfo) {
 
     if (updated) {
         sendJson("http://localhost:8081/metrics", res)
-            .then((response) => console.log("Metric Server Response", response))
+            .then((response) => console.log("Metric Server Response", res, response.text()))
             .catch((error) => console.error("Metric Server Error", res, error));
     }
 

@@ -9,8 +9,14 @@ const MongoClient = require("mongodb").MongoClient;
 const mongo_url = "mongodb://mongo:27017/flixtube_db";
 const app = express();
 
+// DB constants
+const DBNAME = "flixtube_db";
 const VIDEOCOLLECTION = "video";
 const AUDIOCOLLECTION = "audio";
+const WAITCOLLECTION = "wait";
+
+const OK = 200;
+const BADREQ = 420;
 
 app.use(bodyParser.json());
 
@@ -41,17 +47,31 @@ app.get("/", function (req, res, next) {
 
 app.post("/metrics", function (req, res, ignore) {   // ignore = next (?)
     var json = req.body;
-    if (flixtube_db !== null) {
+    try {
+        if (flixtube_db !== null) {
 
-        json.audio.forEach(function (elem) {
-            insertInDatabase(AUDIOCOLLECTION, elem);
-        });
+            json.audio.forEach(function (elem) {
+                insertInDatabase(AUDIOCOLLECTION, elem);
+            });
 
-        json.video.forEach(function (elem) {
-            insertInDatabase(VIDEOCOLLECTION, elem);
-        });
+            json.video.forEach(function (elem) {
+                insertInDatabase(VIDEOCOLLECTION, elem);
+            });
+        }
+        res.sendStatus(OK);
+    } catch (err) {
+        res.status(BADREQ).send("database error: " +  err.toString());
     }
-    res.send(req.body);
+});
+
+app.post("/metrics/wait", function (req, res, ignore) { //ignore = next
+    try {
+        var json = req.body;
+        insertInDatabase(WAITCOLLECTION, json);
+        res.sendStatus(OK);
+    } catch (err) {
+        res.status(BADREQ).send("database error: " +  err.toString());
+    }
 });
 
 app.listen(8081);
@@ -71,11 +91,12 @@ MongoClient.connect(mongo_url, function (err, db) {
     if (err) {
         throw err;
     }
-    var dbo = db.db("flixtube_db");
+    var dbo = db.db(DBNAME);
     database = db;
     flixtube_db = dbo;
     createCollection(VIDEOCOLLECTION);
     createCollection(AUDIOCOLLECTION);
+    createCollection(WAITCOLLECTION);
 });
 
 
