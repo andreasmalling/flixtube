@@ -22,7 +22,7 @@ function waitStop(id, player) {
             stall: waitElement.time,
             stream: waitElement.stream,
             mpd: player.getSource().match(mpdPattern)[0],
-            ip: ip
+            ip: id
         };
 
         isWaiting = false;
