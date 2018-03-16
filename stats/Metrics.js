@@ -6,7 +6,7 @@ var index = {video: 0, audio: 0};
 var segmentPattern = /Segment_([0-9]+)/;
 var mpdPattern = /ip[fn]s\/[0-9a-zA-Z]+/;
 
-var waitElement = {stream: "", time: 0}
+var waitElement = {stream: "", time: 0};
 var isWaiting = false;
 
 function waitStart(streamType) {
