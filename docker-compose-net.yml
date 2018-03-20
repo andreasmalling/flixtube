@@ -16,14 +16,12 @@ services:
           - metric
           - host
     host:
-        #python server hosting the website for the webplayer
+        #python server hosting the website for the web player
+        # the web player can be found on "host:8000/webplayer.html"
         image: kgoyo/flixtube_host
 
     metric:
         image: kgoyo/flixmetric
-
-        ports:
-          - "8081:8081"
 
         restart: always
 

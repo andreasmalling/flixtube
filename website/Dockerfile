@@ -4,4 +4,4 @@ WORKDIR /usr/src/app
 COPY . .
 
 ENTRYPOINT [ "python" ]
-CMD [ "-m", "http.server" ]
+CMD [ "-m", "http.server", "80"]

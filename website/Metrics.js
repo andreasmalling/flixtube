@@ -9,6 +9,8 @@ var mpdPattern = /ip[fn]s\/[0-9a-zA-Z]+/;
 var waitElement = {stream: "", time: 0};
 var isWaiting = false;
 
+var metricsUrl = "http://metric:8081";
+
 function waitStart(streamType) {
     waitElement.time = Date.now();
     waitElement.stream = streamType;
@@ -27,7 +29,7 @@ function waitStop(id, player) {
 
         isWaiting = false;
 
-        sendJson("http://localhost:8081/metrics/wait", res)
+        sendJson(metricsUrl + "/metrics/wait", res)
             .then((response) => console.log("Wait Server Response", res, response.text()))
             .catch((error) => console.error("Wait Server Error", res, error));
     }
@@ -84,7 +86,7 @@ function updateMetrics(id, player, streamInfo) {
     });
 
     if (updated) {
-        sendJson("http://localhost:8081/metrics", res)
+        sendJson(metricsUrl + "/metrics", res)
             .then((response) => console.log("Metric Server Response", res, response.text()))
             .catch((error) => console.error("Metric Server Error", res, error));
     }

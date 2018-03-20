@@ -85,7 +85,7 @@ if args:
     subprocess.call(bandwidth_call)
 
 if manual:
-    subprocess.run(["google-chrome"])
+    subprocess.run(["google-chrome", "host/webplayer.html"])
 else:
     user = User(False)
     user.visit_hash("QmPYSNtQ5XMp88zZJVNYSLafjQZXHGN5T3pht71SdukVcG")
