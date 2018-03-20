@@ -1,0 +1,39 @@
+version: '3.5'
+services:
+    client:
+        image: andreasmalling/flixtube
+
+        #these 2 are only necessary for when we want to see the containers browser
+        environment:
+            - DISPLAY=$DISPLAY
+        volumes:
+          - /tmp/.X11-unix:/tmp/.X11-unix
+
+        # commands for the flixtube client
+        command: ["-m"]
+
+        depends_on:
+          - metric
+          - host
+    host:
+        #python server hosting the website for the webplayer
+        image: kgoyo/flixtube_host
+
+    metric:
+        image: kgoyo/flixmetric
+
+        ports:
+          - "8081:8081"
+
+        restart: always
+
+        # Dependant on the 'mongo' container running, since it's our storage
+        depends_on:
+            - mongo
+    mongo:
+        image: mongo:3.6.3
+
+        volumes:
+          - ./data:/data/db
+
+        command: --smallfiles --noprealloc
