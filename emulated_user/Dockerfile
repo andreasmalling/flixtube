@@ -10,6 +10,4 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Add bin folder to path
 ENV PATH="/usr/src/app/bin:${PATH}"
 
-ENTRYPOINT [ "python3" ]
-
-CMD [ "./emulated_user.py" ]
+ENTRYPOINT [ "python3", "./entrypoint.py" ]

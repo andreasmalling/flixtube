@@ -1,16 +1,16 @@
 from splinter import Browser
 from time import sleep
 import subprocess
+from optparse import OptionParser
 
-class User:
-
-    def setup_ipfs(self):
+class Ipfs:
+    def __init__(self):
         subprocess.run(["ipfs", "init"])
         subprocess.Popen(["ipfs", "daemon"])
 
+class User:
     def __init__(self, isHeadless=True):
-        self.setup_ipfs()
-
+        sleep(10)
         self.browser = Browser('chrome', headless=isHeadless)
 
     def visit(self, url):
@@ -29,12 +29,10 @@ class User:
         self.seekBtn = self.browser.find_by_id("seekBtn").first
         self.randBtn = self.browser.find_by_id("seekRandomBtn").first
 
-    def execute(self, manifest):
+    def watch_hash(self, manifest):
         # Access IPFS hosted mpd
         self.hashInput.fill(manifest)
         self.hashBtn.click()
-
-        sleep(600)
 
         # Skip to 2:00
         # seekPos.fill(120)
@@ -51,6 +49,45 @@ class User:
         #
         #browser.quit()
 
-user = User(False)
-user.visit_hash("QmPYSNtQ5XMp88zZJVNYSLafjQZXHGN5T3pht71SdukVcG")
-user.execute("QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs")
+
+parser = OptionParser()
+# Browser Options
+parser.add_option("-m", "--manual", action="store_true", dest="manual", default=False)
+
+# Bandwidth options
+parser.add_option("-d","--download", action="store", type="int", dest="download")
+parser.add_option("-u","--upload", action="store", type="int", dest="upload")
+
+# IPFS Options
+parser.add_option("--noipfs", action="store_true", dest="skipIpfs", default=False)
+
+# Parse options
+(options, args) = parser.parse_args()
+manual = options.manual
+download = options.download
+upload = options.upload
+skipIpfs = options.skipIpfs
+
+# Handle Options
+if not skipIpfs:
+    ipfs = Ipfs()
+
+bandwidth_args = []
+
+if download is not None:
+    bandwidth_args.append(["-d", download])
+if upload is not None:
+    bandwidth_args.append(["-u", upload])
+
+if args:
+    bandwidth_call = ["tc"]
+    bandwidth_call.append(bandwidth_args)
+    subprocess.call(bandwidth_call)
+
+if manual:
+    subprocess.run(["google-chrome"])
+else:
+    user = User(False)
+    user.visit_hash("QmPYSNtQ5XMp88zZJVNYSLafjQZXHGN5T3pht71SdukVcG")
+    user.watch_hash("QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs")
+    sleep(10)
