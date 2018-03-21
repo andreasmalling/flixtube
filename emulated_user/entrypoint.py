@@ -60,6 +60,7 @@ parser.add_option("-u","--upload", action="store", type="int", dest="upload")
 
 # IPFS Options
 parser.add_option("--noipfs", action="store_true", dest="skipIpfs", default=False)
+# TODO: Add bootstrap to /ip4/172.17.0.2/tcp/4001/ipfs/QmRuQ3sSxtuJBHYKJnLcYDFK4RVELydNDJ9F2vPg9Uj1H3
 
 # Parse options
 (options, args) = parser.parse_args()
