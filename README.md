@@ -4,7 +4,7 @@
 
 mongo database and http server to handle post requests to the DB from [website][] clients logging their playback
 
-##[plot][]
+## [plot][]
 
 Plots data from the [metric_server][] mongodb
 
