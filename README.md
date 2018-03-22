@@ -10,11 +10,13 @@ Plots data from the [metric_server][] mongodb
 
 ## [website][]
 
-Website for playing IPFS videos using the Dash.JS player
+Website for playing [IPFS][] videos using the [Dash.JS][] player
 
 
 
-[emulated_user]: ./tree/master/emulated_user
-[plot]: ./tree/master/plot
-[metric_server]: ./tree/master/metric_server
-[website]: ./tree/master/website
+[emulated_user]: ./emulated_user
+[plot]: ./plot
+[metric_server]: ./metric_server
+[website]: ./website
+[Dash.JS]: http://cdn.dashjs.org/latest/jsdoc/index.html
+[IPFS]: https://ipfs.io
