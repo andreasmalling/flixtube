@@ -17,6 +17,7 @@ services:
         depends_on:
           - metric
           - host
+          - bootstrap
     host:
         #python server hosting the website for the web player
         # the web player can be found on "host:8000/webplayer.html"
