@@ -1,4 +1,8 @@
 
+# Don't move videos
+video_dashed/*
+video_encoded/*
+
 # Created by https://www.gitignore.io/api/node,linux,macos,python,windows,pycharm,webstorm,intellij
 
 ### Intellij ###
