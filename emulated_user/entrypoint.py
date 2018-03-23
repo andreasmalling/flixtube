@@ -6,7 +6,20 @@ from optparse import OptionParser
 class Ipfs:
     def __init__(self):
         subprocess.run(["ipfs", "init"])
+
+    def run_daemon(self):
         subprocess.Popen(["ipfs", "daemon"])
+
+    def bootstrap_local(self):
+        address = "/dnsaddr/bootstrap/tcp/4001/ipfs/QmRuQ3sSxtuJBHYKJnLcYDFK4RVELydNDJ9F2vPg9Uj1H3"
+        subprocess.run(["ipfs", "bootstrap", "rm", "all"])
+        subprocess.run(["ipfs", "bootstrap", "add", address])
+
+    def bootstrap_default(self):
+        subprocess.run(["ipfs", "bootstrap", "add", "default"])
+
+    def add(self, path):
+        subprocess.run(["ipfs", "add", path])
 
 class User:
     def __init__(self, isHeadless=True):
@@ -53,42 +66,32 @@ class User:
 parser = OptionParser()
 # Browser Options
 parser.add_option("-m", "--manual", action="store_true", dest="manual", default=False)
-
-# Bandwidth options
-parser.add_option("-d","--download", action="store", type="int", dest="download")
-parser.add_option("-u","--upload", action="store", type="int", dest="upload")
+parser.add_option("-h", "--head", action="store_true", dest="browserHead", default=False)
 
 # IPFS Options
-parser.add_option("--noipfs", action="store_true", dest="skipIpfs", default=False)
-# TODO: Add bootstrap to /ip4/172.17.0.2/tcp/4001/ipfs/QmRuQ3sSxtuJBHYKJnLcYDFK4RVELydNDJ9F2vPg9Uj1H3
+parser.add_option("--noipfs", action="store_false", dest="ipfsDaemon", default=True)
+parser.add_option("-b", "--bootstrap", action="store_false", dest="ipfsLocal", default=True)
 
 # Parse options
 (options, args) = parser.parse_args()
-manual = options.manual
-download = options.download
-upload = options.upload
-skipIpfs = options.skipIpfs
+
+# Init IPFS
+ipfs = Ipfs()
 
 # Handle Options
-if not skipIpfs:
-    ipfs = Ipfs()
+if options.ipfsDaemon:
+    ipfs.run_daemon()
 
-bandwidth_args = []
+if options.ipfsLocal:
+    ipfs.bootstrap_local()
 
-if download is not None:
-    bandwidth_args.append(["-d", download])
-if upload is not None:
-    bandwidth_args.append(["-u", upload])
-
-if args:
-    bandwidth_call = ["tc"]
-    bandwidth_call.append(bandwidth_args)
-    subprocess.call(bandwidth_call)
-
-if manual:
+if options.manual:
     subprocess.run(["google-chrome", "host/webplayer.html"])
 else:
-    user = User(False)
-    user.visit_hash("QmPYSNtQ5XMp88zZJVNYSLafjQZXHGN5T3pht71SdukVcG")
+    user = User(options.browserHead)
+    # Persona Behaviour
+
+    user.visit("http://host/webplayer.html")
     user.watch_hash("QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs")
-    sleep(10)
+    user.browser.find_option_by_text("Bitmovin (Adaptive)").first.click()
+    sleep(301)
