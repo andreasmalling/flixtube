@@ -10,7 +10,7 @@ services:
             - DISPLAY=$DISPLAY
         volumes:
           - /tmp/.X11-unix:/tmp/.X11-unix
-          - ./videos_dashed/:./videos_dashed/
+          - ./videos_dashed/:/usr/src/app/videos_dashed/
 
         # commands for the flixtube client
         command: ["-m"]
