@@ -2,6 +2,10 @@ from splinter import Browser
 from time import sleep
 import subprocess
 from optparse import OptionParser
+from enum import Enum
+
+from BingePersona import BingePersona
+
 
 class Ipfs:
     def __init__(self):
@@ -61,12 +65,13 @@ class User:
         # randBtn.click()
         #
         #browser.quit()
-
+class PersonaType(Enum):
+    BINGE = 1
 
 parser = OptionParser()
 # Browser Options
 parser.add_option("-m", "--manual", action="store_true", dest="manual", default=False)
-parser.add_option("-h", "--head", action="store_true", dest="browserHead", default=False)
+parser.add_option("--head", action="store_true", dest="browserHead", default=False)
 
 # IPFS Options
 parser.add_option("--noipfs", action="store_false", dest="ipfsDaemon", default=True)
@@ -90,8 +95,18 @@ if options.manual:
 else:
     user = User(options.browserHead)
     # Persona Behaviour
+    hash = "some string"
+    persona = None
+    personaType = PersonaType.BINGE
 
-    user.visit("http://host/webplayer.html")
-    user.watch_hash("QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs")
-    user.browser.find_option_by_text("Bitmovin (Adaptive)").first.click()
+    # switch case
+    persona = {
+        PersonaType.BINGE: BingePersona(user, hash)
+    }[personaType]
+
+    persona.act()
+
+    # user.visit("http://host/webplayer.html")
+    # user.watch_hash("QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs")
+    # user.browser.find_option_by_text("Bitmovin (Adaptive)").first.click()
     sleep(301)
