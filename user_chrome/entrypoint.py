@@ -91,7 +91,7 @@ if options.ipfsLocal:
     ipfs.bootstrap_local()
 
 if options.manual:
-    subprocess.run(["google-chrome", "host/webplayer.html"])
+    subprocess.run(["google-chrome", "--no-first-run", "host/webplayer.html"])
 else:
     user = User(options.browserHead)
     # Persona Behaviour

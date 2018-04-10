@@ -126,8 +126,8 @@ def ipfs_hash_path(path):
 
     return out.decode("utf-8")
 
-audio_hash = ipfs_hash_path(audio_folder_name)
-video_hash = ipfs_hash_path(video_folder_name)
+audio_hash = ipfs_hash_path(audio_folder_name).rstrip()
+video_hash = ipfs_hash_path(video_folder_name).rstrip()
 
 ### Edit MPD with IPFS Hashes ###
 if audio_hash is None or video_hash is None:
