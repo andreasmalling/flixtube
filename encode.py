@@ -53,13 +53,13 @@ input_name = os.path.splitext(os.path.basename(input_filepath))[0]
 output_filename = input_name + "_key-" + str(output_keyinput_framerate)
 output_dir = input_name + "_key-" + str(segment_duration)
 
-if (len(sys.argv) > 2):
+if (len(sys.argv) > 3):
 	output_crf = sys.argv[3]
 	ffmpeg_options.extend( ["-crf", output_crf] )
 	output_filename += "_crf-" + output_crf
 	output_dir += "_crf-" + output_crf
 
-if (len(sys.argv) > 3):
+if (len(sys.argv) > 4):
 	output_duration = sys.argv[4]
 	ffmpeg_options.extend( ["-t", output_duration] )
 	output_filename += "_dur-" + output_duration
