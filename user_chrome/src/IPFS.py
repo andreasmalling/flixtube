@@ -8,7 +8,7 @@ class Ipfs:
         subprocess.Popen(["ipfs", "daemon"])
 
     def bootstrap_local(self):
-        address = "/dnsaddr/bootstrap/tcp/4001/ipfs/QmV3Z5uRGrkFYHuuvtDdW5EAXhQ1P7GEo5AFUtV7jvD8XW"
+        address = "/dnsaddr/bootstrap/tcp/4001/ipfs/QmfFKpMNi5RZweU5HnCH4NPwRrMDg4uRkEHcnFXAG9hEbm"
         subprocess.run(["ipfs", "bootstrap", "rm", "all"])
         subprocess.run(["ipfs", "bootstrap", "add", address])
 
