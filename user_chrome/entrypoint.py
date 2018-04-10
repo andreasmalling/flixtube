@@ -109,4 +109,3 @@ else:
     # user.visit("http://host/webplayer.html")
     # user.watch_hash("QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs")
     # user.browser.find_option_by_text("Bitmovin (Adaptive)").first.click()
-    sleep(301)
