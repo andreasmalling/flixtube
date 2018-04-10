@@ -43,7 +43,7 @@ else:
 
     # switch case
     persona = {
-        PersonaType.BINGE: BingePersona(user, hash)
+        PersonaType.BINGE: BingePersona(user, hash, True)
     }[personaType]
 
     persona.act()

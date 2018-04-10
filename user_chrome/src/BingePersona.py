@@ -13,3 +13,10 @@ class BingePersona(Persona):
             sleep(0.1)
             duration = self.user.browser.evaluate_script("player.duration()")
         sleep(duration)
+
+        #leave
+        if (not self.leave):
+            while True:
+                print("slep")
+                sleep(1)
+        self.user.browser.quit()
