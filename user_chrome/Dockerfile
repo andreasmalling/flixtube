@@ -7,7 +7,7 @@ RUN sudo apt-get update && sudo apt-get install -y 	\
 WORKDIR /usr/src/app
 COPY bin/ ./bin/
 COPY requirements.txt ./
-COPY entrypoint.py .
+COPY src/ ./src/
 
 # Install Splinter etc.
 RUN pip3 install --no-cache-dir -r requirements.txt
@@ -15,4 +15,4 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Add bin folder to path
 ENV PATH="/usr/src/app/bin:${PATH}"
 
-ENTRYPOINT [ "python3", "./entrypoint.py" ]
+ENTRYPOINT [ "python3", "./src/entrypoint.py" ]

@@ -3,7 +3,7 @@ services:
     bootstrap:
         image: andreasmalling/flixtube_bootstrap
     client:
-        image: andreasmalling/flixtube
+        image: andreasmalling/ft_user
 
         #these 2 are only necessary for when we want to see the containers browser
         environment:
