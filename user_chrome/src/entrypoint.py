@@ -37,7 +37,7 @@ if options.manual:
 else:
     user = User(options.browserHead)
     # Persona Behaviour
-    hash = "some string"
+    hash = "QmWMub2wYzxL5SUjfqsNYYgDv5MRbf693ESewk1dPqp8mf"
     persona = None
     personaType = PersonaType.BINGE
 

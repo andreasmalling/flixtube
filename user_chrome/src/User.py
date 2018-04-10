@@ -2,7 +2,7 @@ from splinter import Browser
 
 class User:
     def __init__(self, isHeadless=True):
-        sleep(10)
+        # sleep(10)
         self.browser = Browser('chrome', headless=isHeadless)
 
     def visit(self, url):
