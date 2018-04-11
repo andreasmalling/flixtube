@@ -21,7 +21,7 @@ for stream in input_metadata.streams:
     if stream.is_video():
         input_framerate = stream.frames() / stream.duration_seconds()
 
-output_keyinput_framerate = round((segment_duration * input_framerate) / 1000)
+output_keyinput_framerate = round((segment_duration * input_framerate) / 2000)
 
 dir_dashed = "video_dashed"
 dir_encoded = "video_encoded"

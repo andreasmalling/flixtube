@@ -5,12 +5,15 @@ from enum import Enum
 
 from User import User
 from BingePersona import BingePersona
+from IncognitoPersona import IncognitoPersona
 from IPFS import Ipfs
 
 
 class PersonaType(Enum):
     BINGE = 1
     BINGELEAVE = 2
+    INCOGNITO = 3
+    INCOGNITOLEAVE = 4
 
 
 parser = OptionParser()
@@ -40,15 +43,17 @@ if options.manual:
 else:
     user = User(options.browserHead)
     # Persona Behaviour
-    hash = "QmWMub2wYzxL5SUjfqsNYYgDv5MRbf693ESewk1dPqp8mf"
+    hash = "QmWXCU7gomHa7VNoYw9ar3mj1EVJSKz35KPPXymT96Xaaf"
     persona = None
-    personaType = PersonaType.BINGELEAVE # TODO get this from flag instead
+    personaType = PersonaType.INCOGNITOLEAVE # TODO get this from flag instead
 
     # switch case
     persona = {
         PersonaType.BINGE: BingePersona(user, hash),
-        PersonaType.BINGELEAVE: BingePersona(user, hash, True)
+        PersonaType.BINGELEAVE: BingePersona(user, hash, True),
+        PersonaType.INCOGNITO: IncognitoPersona(user, hash),
+        PersonaType.INCOGNITOLEAVE: IncognitoPersona(user, hash, True)
     }[personaType]
 
     persona.act()
-    persona.leave_website()
+    # persona.leave_website()

@@ -1,8 +1,8 @@
 from splinter import Browser
 
+
 class User:
     def __init__(self, isHeadless=True):
-        # sleep(10)
         self.browser = Browser('chrome', headless=isHeadless)
 
     def visit(self, url):
@@ -26,17 +26,6 @@ class User:
         self.hashInput.fill(manifest)
         self.hashBtn.click()
 
-        # Skip to 2:00
-        # seekPos.fill(120)
-        # seekBtn.click()
-        #
-        # pos = player["currentTime"]
-        #
-        # assert (pos == '120')
-        #
-        # sleep(3)
-        #
-        # # Skip to random position
-        # randBtn.click()
-        #
-        #browser.quit()
+    def jump_to(self, seconds):
+        self.seekPos.fill(str(seconds))
+        self.seekBtn.click()
