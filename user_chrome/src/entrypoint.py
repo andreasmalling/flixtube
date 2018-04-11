@@ -7,8 +7,11 @@ from User import User
 from BingePersona import BingePersona
 from IPFS import Ipfs
 
+
 class PersonaType(Enum):
     BINGE = 1
+    BINGELEAVE = 2
+
 
 parser = OptionParser()
 # Browser Options
@@ -39,15 +42,13 @@ else:
     # Persona Behaviour
     hash = "QmWMub2wYzxL5SUjfqsNYYgDv5MRbf693ESewk1dPqp8mf"
     persona = None
-    personaType = PersonaType.BINGE
+    personaType = PersonaType.BINGELEAVE # TODO get this from flag instead
 
     # switch case
     persona = {
-        PersonaType.BINGE: BingePersona(user, hash, True)
+        PersonaType.BINGE: BingePersona(user, hash),
+        PersonaType.BINGELEAVE: BingePersona(user, hash, True)
     }[personaType]
 
     persona.act()
-
-    # user.visit("http://host/webplayer.html")
-    # user.watch_hash("QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs")
-    # user.browser.find_option_by_text("Bitmovin (Adaptive)").first.click()
+    persona.leave_website()
