@@ -15,4 +15,4 @@ class Persona:
         if not self.leave:
             while True:
                 print("sleep")
-                sleep(1)
+                sleep(5)
