@@ -1,6 +1,7 @@
-from time import sleep
+#!/usr/bin/python3
+
 import subprocess
-from optparse import OptionParser
+from optparse import OptionParser, OptionGroup
 from enum import Enum
 
 import sys
@@ -17,18 +18,29 @@ class PersonaType(Enum):
     INCOGNITO = 1
     SKIPPER = 2
 
-parser = OptionParser()
+parser = OptionParser(usage="%prog [OPTIONS] PERSONA [PERSONA_ARGS]")
+
 # Browser Options
-parser.add_option("-m", "--manual", action="store_true", dest="manual", default=False)
-parser.add_option("--head", action="store_true", dest="browserHead", default=False)
+group_browser = OptionGroup(parser, "Browser Options")
+group_browser.add_option("-m", "--manual", action="store_true", dest="manual", default=False,
+                  help="spawn browser for manual interaction")
+group_browser.add_option("--head", action="store_true", dest="browserHead", default=False,
+                  help="display browser while running persona")
+parser.add_option_group(group_browser)
 
 # IPFS Options
-parser.add_option("--no-ipfs", action="store_false", dest="ipfsDaemon", default=True)
-parser.add_option("-g", "--global-bootstrap", action="store_false", dest="ipfsLocal", default=True)
+group_ipfs = OptionGroup(parser, "IPFS Options")
+group_ipfs.add_option("--no-ipfs", action="store_false", dest="ipfsDaemon", default=True,
+                      help="don't run ipfs daemon")
+group_ipfs.add_option("-g", "--global", action="store_false", dest="ipfsLocal", default=True,
+                      help="use default bootstrap for global access (Default: Local bootstrap")
+parser.add_option_group(group_ipfs)
 
 # Persona options
-parser.add_option("-l", "--leave", action="store_true", dest="leave_website", default=False,
+group_persona = OptionGroup(parser, "Persona Options")
+group_persona.add_option("-l", "--leave", action="store_true", dest="leave_website", default=False,
                   help="Makes persona leave IPFS network after finishing video (default False)")
+parser.add_option_group(group_persona)
 
 # Parse options
 (options, args) = parser.parse_args()
