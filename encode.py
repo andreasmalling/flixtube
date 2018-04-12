@@ -15,20 +15,24 @@ parser.print_version()
 
 parser.add_option("-s", type="int", dest="segment_duration", default=3000,
                   help="set segement duration for DASHing")
-parser.add_option("-d", type="int", dest="output_duration",
+parser.add_option("-d", type="string", dest="output_duration",
                   help="set duration of total video output")
-parser.add_option("-c", type="int", dest="output_crf",
+parser.add_option("-c", type="string", dest="output_crf",
                   help="set CRF of video output")
 parser.add_option("-i", type="int", dest="i_factor", default=1,
                   help="factor of minimum i-frames required per segment")
+parser.add_option("-n", action="store_false", dest="overwrite",
+                  help="always use previous encoding from ffmpeg if available")
+parser.add_option("-y", action="store_true", dest="overwrite",
+                  help="never use previous encoding from ffmpeg if available")
 
 (options, args) = parser.parse_args()
 
-if (len(sys.argv) < 2):
-    parser.print_usage()
+if len(args) != 1:
+    parser.error("incorrect number of arguments")
     sys.exit(1)
 
-input_filepath = sys.argv[1]
+input_filepath = args[0]
 
 # probe metadata
 input_metadata = FFProbe(input_filepath)
@@ -69,14 +73,18 @@ input_name = os.path.splitext(os.path.basename(input_filepath))[0]
 output_filename = input_name + "_key-" + str(output_keyinput_framerate)
 output_dir = input_name + "_key-" + str(options.segment_duration)
 
+if (options.overwrite is not None):
+    if options.overwrite:
+        ffmpeg_options.extend(["-y"])
+    else:
+        ffmpeg_options.extend(["-n"])
+
 if (options.output_crf is not None):
-    options.output_crf = sys.argv[3]
     ffmpeg_options.extend(["-crf", options.output_crf])
     output_filename += "_crf-" + options.output_crf
     output_dir += "_crf-" + options.output_crf
 
 if (options.output_duration is not None):
-    options.output_duration = sys.argv[4]
     ffmpeg_options.extend(["-t", options.output_duration])
     output_filename += "_dur-" + options.output_duration
     output_dir += "_dur-" + options.output_duration
