@@ -2,13 +2,22 @@ from time import sleep
 
 from Persona import Persona
 
+DEFAULTSKIPLENGTH = 10
+DEFAULTWATCHTIME = 3
 
 class SkipperPersona(Persona):
 
-    def __init__(self, user, hash, leave=False, skip_length=10, watch_time=3):
-        super().__init__(user, hash, leave)
-        self.skip_length = skip_length
-        self.watch_time = watch_time
+    def __init__(self, user, hash, leave, other_args):
+        super().__init__(user, hash, leave, other_args)
+        if len(other_args) > 0:
+            self.skip_length = int(other_args[0])
+        else:
+            self.skip_length = DEFAULTSKIPLENGTH
+
+        if len(other_args) > 1:
+            self.watch_time = int(other_args[1])
+        else:
+            self.watch_time = DEFAULTWATCHTIME
 
     def get_time(self):
         return self.user.browser.evaluate_script("player.time()")

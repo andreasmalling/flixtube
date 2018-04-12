@@ -46,7 +46,7 @@ if options.ipfsDaemon:
 if options.manual:
     subprocess.run(["google-chrome", "--no-first-run", "host/webplayer.html"])
 else:
-    if len(args) != 1:
+    if len(args) < 1:
         print("persona number must be specified")
         sys.exit(0)
     personaType = int(args[0])
@@ -54,18 +54,19 @@ else:
     if personaType not in values:
         print("not a valid persona")
         sys.exit(0)
+    args.remove(args[0])
 
     user = User(options.browserHead)
 
     # Persona Behaviour
-    hash = "QmUZTQDnKKwnjfKSfeezsD1YYL1efpNVLqriW4Lta64Tci"
+    hash = "QmNsdjY3GoRbubyAeR8ZimTCCp8v11ryhJxfe9hqngRRCc"
     persona = None
 
     # switch case
     persona = {
-        PersonaType.BINGE.value: BingePersona(user, hash, options.leave_website),
-        PersonaType.INCOGNITO.value: IncognitoPersona(user, hash, options.leave_website),
-        PersonaType.SKIPPER.value: SkipperPersona(user, hash, options.leave_website)
+        PersonaType.BINGE.value: BingePersona(user, hash, options.leave_website, args),
+        PersonaType.INCOGNITO.value: IncognitoPersona(user, hash, options.leave_website, args),
+        PersonaType.SKIPPER.value: SkipperPersona(user, hash, options.leave_website, args)
     }[personaType]
     persona.act()
     persona.leave_website()

@@ -2,9 +2,18 @@ from time import sleep
 
 from Persona import Persona
 
+DEFAULTSECONDSLEFT = 10
 
 class IncognitoPersona(Persona):
-    seconds_left = 10
+
+    def __init__(self, user, hash, leave, other_args):
+        super().__init__(user, hash, leave, other_args)
+
+        # set seconds left
+        if len(other_args) > 0:
+            self.seconds_left = int(other_args[0])
+        else:
+            self.seconds_left = DEFAULTSECONDSLEFT
 
     def act(self):
         self.user.visit("http://localhost:8000/webplayer.html")

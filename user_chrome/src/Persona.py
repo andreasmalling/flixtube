@@ -2,10 +2,11 @@ from time import sleep
 
 
 class Persona:
-    def __init__(self, user, hash, leave=False):
+    def __init__(self, user, hash, leave, other_args):
         self.user = user
         self.hash = hash
         self.leave = leave
+        self.other_args = other_args
 
     def act(self):
         raise NotImplementedError("Persona class is abstract")
