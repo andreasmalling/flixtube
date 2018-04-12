@@ -18,7 +18,12 @@ class PersonaType(Enum):
     INCOGNITO = 1
     SKIPPER = 2
 
-parser = OptionParser(usage="%prog [OPTIONS] PERSONA [PERSONA_ARGS]")
+persona_list = "PERSONA List:\t"
+for pt in PersonaType:
+    persona_list += str(pt.value) + "=" + pt.name + ", "
+persona_list = persona_list[:-2] # Remove last comma
+
+parser = OptionParser(usage="%prog [OPTIONS] PERSONA [PERSONA_ARGS]", description=persona_list)
 
 # Browser Options
 group_browser = OptionGroup(parser, "Browser Options")
