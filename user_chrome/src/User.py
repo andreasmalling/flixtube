@@ -20,11 +20,15 @@ class User:
         self.seekPos = self.browser.find_by_id("seekPos").first
         self.seekBtn = self.browser.find_by_id("seekBtn").first
         self.randBtn = self.browser.find_by_id("seekRandomBtn").first
+        self.localCheck = self.browser.find_by_id("localCheck").first
 
     def watch_hash(self, manifest):
         # Access IPFS hosted mpd
         self.hashInput.fill(manifest)
         self.hashBtn.click()
+
+    def toggle_gateway(self):
+        self.localCheck.click()
 
     def jump_to(self, seconds):
         self.seekPos.fill(str(seconds))

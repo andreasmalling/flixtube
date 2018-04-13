@@ -81,12 +81,13 @@ else:
     hash = "QmNsdjY3GoRbubyAeR8ZimTCCp8v11ryhJxfe9hqngRRCc"
     persona = None
 
+    print(personaType)
     # switch case
     persona = {
         PersonaType.BINGE.value: BingePersona(user, hash, options.leave_website, args),
         PersonaType.INCOGNITO.value: IncognitoPersona(user, hash, options.leave_website, args),
         PersonaType.SKIPPER.value: SkipperPersona(user, hash, options.leave_website, args),
-        PersonaType.IDLE.value: IdlePersona(user,hash,options.leave_website,args)
+        PersonaType.IDLE.value: IdlePersona(user, hash, options.leave_website, args)
     }[personaType]
     persona.act()
     persona.leave_website()
