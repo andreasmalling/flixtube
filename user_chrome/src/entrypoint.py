@@ -10,6 +10,7 @@ from User import User
 from BingePersona import BingePersona
 from IncognitoPersona import IncognitoPersona
 from SkipperPersona import SkipperPersona
+from IdlePersona import IdlePersona
 from IPFS import Ipfs
 
 
@@ -17,6 +18,7 @@ class PersonaType(Enum):
     BINGE = 0
     INCOGNITO = 1
     SKIPPER = 2
+    IDLE = 3
 
 persona_list = "PERSONA List:\t"
 for pt in PersonaType:
@@ -83,7 +85,8 @@ else:
     persona = {
         PersonaType.BINGE.value: BingePersona(user, hash, options.leave_website, args),
         PersonaType.INCOGNITO.value: IncognitoPersona(user, hash, options.leave_website, args),
-        PersonaType.SKIPPER.value: SkipperPersona(user, hash, options.leave_website, args)
+        PersonaType.SKIPPER.value: SkipperPersona(user, hash, options.leave_website, args),
+        PersonaType.IDLE.value: IdlePersona(user,hash,options.leave_website,args)
     }[personaType]
     persona.act()
     persona.leave_website()
