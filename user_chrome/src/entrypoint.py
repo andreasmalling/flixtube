@@ -32,9 +32,13 @@ class PersonaType(Enum):
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 
 # Positional Arguments
-parser.add_argument('persona', metavar='PERSONA', type=PersonaType.from_string, choices=list(PersonaType))
+parser.add_argument('persona', type=PersonaType.from_string, choices=list(PersonaType))
 parser.add_argument('persona_options', metavar='OPTION', type=int, nargs='*',
-                    help="options passed to PERSONA")
+                    help="options passed to PERSONA\n"
+                         "BINGE: takes 1 argument (0 = don't leech, 1 = leech)\n"
+                         "INCOGNITO: takes 1 argument, how many seconds of the end of the video to watch\n"
+                         "SKIPPER: takes 2 arguments, 1st is the skip length, 2nd is the watch length\n"
+                         "IDLE: takes no arguments")
 
 # Browser Options
 parser.add_argument("-m", "--manual", action="store_true", dest="manual", default=False,
