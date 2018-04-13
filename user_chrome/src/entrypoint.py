@@ -1,10 +1,8 @@
 #!/usr/bin/python3
 
 import subprocess
-from optparse import OptionParser, OptionGroup
-from enum import Enum
-
-import sys
+import argparse
+from enum import Enum, unique
 
 from User import User
 from BingePersona import BingePersona
@@ -13,69 +11,67 @@ from SkipperPersona import SkipperPersona
 from IdlePersona import IdlePersona
 from IPFS import Ipfs
 
-
+@unique
 class PersonaType(Enum):
     BINGE = 0
     INCOGNITO = 1
     SKIPPER = 2
     IDLE = 3
 
-persona_list = "PERSONA List:\t"
-for pt in PersonaType:
-    persona_list += str(pt.value) + "=" + pt.name + ", "
-persona_list = persona_list[:-2] # Remove last comma
+    def __str__(self):
+        return self.name
 
-parser = OptionParser(usage="%prog [OPTIONS] PERSONA [PERSONA_ARGS]", description=persona_list)
+    @staticmethod
+    def from_string(s):
+        try:
+            return PersonaType[s]
+        except KeyError:
+            raise ValueError()
+
+
+parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+
+# Positional Arguments
+parser.add_argument('persona', metavar='PERSONA', type=PersonaType.from_string, choices=list(PersonaType))
+parser.add_argument('persona_options', metavar='OPTION', type=int, nargs='*',
+                    help="options passed to PERSONA")
 
 # Browser Options
-group_browser = OptionGroup(parser, "Browser Options")
-group_browser.add_option("-m", "--manual", action="store_true", dest="manual", default=False,
+parser.add_argument("-m", "--manual", action="store_true", dest="manual", default=False,
                   help="spawn browser for manual interaction")
-group_browser.add_option("--head", action="store_true", dest="browserHead", default=False,
+parser.add_argument("--head", action="store_true", dest="browserHead", default=False,
                   help="display browser while running persona")
-parser.add_option_group(group_browser)
 
 # IPFS Options
-group_ipfs = OptionGroup(parser, "IPFS Options")
-group_ipfs.add_option("--no-ipfs", action="store_false", dest="ipfsDaemon", default=True,
+parser.add_argument("--no-ipfs", action="store_false", dest="ipfsDaemon", default=True,
                       help="don't run ipfs daemon")
-group_ipfs.add_option("-g", "--global", action="store_false", dest="ipfsLocal", default=True,
+parser.add_argument("-g", "--global", action="store_false", dest="ipfsLocal", default=True,
                       help="use default bootstrap for global access (Default: Local bootstrap")
-parser.add_option_group(group_ipfs)
 
 # Persona options
-group_persona = OptionGroup(parser, "Persona Options")
-group_persona.add_option("-l", "--leave", action="store_true", dest="leave_website", default=False,
-                  help="Makes persona leave IPFS network after finishing video (default False)")
-parser.add_option_group(group_persona)
+parser.add_argument("-l", "--leave", action="store_true", dest="leave_website", default=False,
+                  help="makes persona leave IPFS network after finishing video (default False)")
 
 # Parse options
-(options, args) = parser.parse_args()
+args = parser.parse_args()
 
 # Init IPFS
 ipfs = Ipfs()
 
 # Handle Options
-if options.ipfsLocal:
+if args.ipfsLocal:
     ipfs.bootstrap_local()
 
-if options.ipfsDaemon:
+if args.ipfsDaemon:
     ipfs.run_daemon()
 
-if options.manual:
+if args.manual:
     subprocess.run(["google-chrome", "--no-first-run", "host/webplayer.html"])
 else:
-    if len(args) < 1:
-        print("persona number must be specified")
-        sys.exit(0)
-    personaType = int(args[0])
-    values = [item.value for item in PersonaType]
-    if personaType not in values:
-        print("not a valid persona")
-        sys.exit(0)
-    args.remove(args[0])
+    personaType = args.persona
+    options = args.persona_options
 
-    user = User(options.browserHead)
+    user = User(args.browserHead)
 
     # Persona Behaviour
     hash = "QmNsdjY3GoRbubyAeR8ZimTCCp8v11ryhJxfe9hqngRRCc"
@@ -84,11 +80,10 @@ else:
     print(personaType)
     # switch case
     persona = {
-        PersonaType.BINGE.value: BingePersona(user, hash, options.leave_website, args),
-        PersonaType.INCOGNITO.value: IncognitoPersona(user, hash, options.leave_website, args),
-        PersonaType.SKIPPER.value: SkipperPersona(user, hash, options.leave_website, args),
-        PersonaType.IDLE.value: IdlePersona(user, hash, options.leave_website, args)
+        PersonaType.BINGE: BingePersona(user, hash, args.leave_website, options),
+        PersonaType.INCOGNITO: IncognitoPersona(user, hash, args.leave_website, options),
+        PersonaType.SKIPPER: SkipperPersona(user, hash, args.leave_website, options),
+        PersonaType.IDLE: IdlePersona(user, hash, args.leave_website, options)
     }[personaType]
     persona.act()
     persona.leave_website()
-
