@@ -5,34 +5,38 @@ from shutil import rmtree, move
 from xml.dom import minidom
 import subprocess
 from ffprobe3 import FFProbe
-from optparse import OptionParser
+import argparse
 
-version = "%prog version 0.9"
-usage = "%prog [OPTIONS] SOURCE"
+version = "version 1.1"
 
-parser = OptionParser(usage=usage, version=version)
-parser.print_version()
+parser = argparse.ArgumentParser(description=version)
+parser.set_defaults(segment_duration=3000, i_factor=1)
 
-parser.add_option("-s", type="int", dest="segment_duration", default=3000,
-                  help="set segement duration for DASHing")
-parser.add_option("-d", type="string", dest="output_duration",
+parser.add_argument("source", help="path of video file to be dashed")
+
+parser.add_argument('--version', action='version', version=version)
+
+parser.add_argument("-s", type=int, action="store", dest="segment_duration",
+                    help="set segement duration for DASHing")
+
+parser.add_argument("-d", dest="output_duration",
                   help="set duration of total video output")
-parser.add_option("-c", type="string", dest="output_crf",
+parser.add_argument("-c", dest="output_crf",
                   help="set CRF of video output")
-parser.add_option("-i", type="int", dest="i_factor", default=1,
+parser.add_argument("-i", type=int, dest="i_factor",
                   help="factor of minimum i-frames required per segment")
-parser.add_option("-n", action="store_false", dest="overwrite",
-                  help="always use previous encoding from ffmpeg if available")
-parser.add_option("-y", action="store_true", dest="overwrite",
+
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-y", action="store_true", dest="overwrite",
                   help="never use previous encoding from ffmpeg if available")
+group.add_argument("-n", action="store_false", dest="overwrite",
+                  help="always use previous encoding from ffmpeg if available")
 
-(options, args) = parser.parse_args()
+args = parser.parse_args()
 
-if len(args) != 1:
-    parser.error("incorrect number of arguments")
-    sys.exit(1)
+print(version)
 
-input_filepath = args[0]
+input_filepath = args.source
 
 # probe metadata
 input_metadata = FFProbe(input_filepath)
@@ -40,7 +44,7 @@ for stream in input_metadata.streams:
     if stream.is_video():
         input_framerate = stream.frames() / stream.duration_seconds()
 
-output_keyinput_framerate = round((options.segment_duration * input_framerate) / (1000 * options.i_factor))
+output_keyinput_framerate = round((args.segment_duration * input_framerate) / (1000 * args.i_factor))
 
 dir_dashed = "video_dashed"
 dir_encoded = "video_encoded"
@@ -71,23 +75,23 @@ ffmpeg_options = ["ffmpeg",
 
 input_name = os.path.splitext(os.path.basename(input_filepath))[0]
 output_filename = input_name + "_key-" + str(output_keyinput_framerate)
-output_dir = input_name + "_key-" + str(options.segment_duration)
+output_dir = input_name + "_key-" + str(args.segment_duration)
 
-if (options.overwrite is not None):
-    if options.overwrite:
+if (args.overwrite is not None):
+    if args.overwrite:
         ffmpeg_options.extend(["-y"])
     else:
         ffmpeg_options.extend(["-n"])
 
-if (options.output_crf is not None):
-    ffmpeg_options.extend(["-crf", options.output_crf])
-    output_filename += "_crf-" + options.output_crf
-    output_dir += "_crf-" + options.output_crf
+if (args.output_crf is not None):
+    ffmpeg_options.extend(["-crf", args.output_crf])
+    output_filename += "_crf-" + args.output_crf
+    output_dir += "_crf-" + args.output_crf
 
-if (options.output_duration is not None):
-    ffmpeg_options.extend(["-t", options.output_duration])
-    output_filename += "_dur-" + options.output_duration
-    output_dir += "_dur-" + options.output_duration
+if (args.output_duration is not None):
+    ffmpeg_options.extend(["-t", args.output_duration])
+    output_filename += "_dur-" + args.output_duration
+    output_dir += "_dur-" + args.output_duration
 
 mpd_filepath = input_name + ".mpd"
 segment_formating = input_name + "_$RepresentationID$/Segment_$Number$$Init=0$"
@@ -120,7 +124,7 @@ subprocess.run(ffmpeg_options)
 
 ### DASHing ###
 mp4box_options = ["MP4Box",
-                  "-dash", str(options.segment_duration),
+                  "-dash", str(args.segment_duration),
                   "-rap",
                   "-profile", "dashavc264:live",
                   "-out", input_name,
