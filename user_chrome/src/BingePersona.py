@@ -15,7 +15,7 @@ class BingePersona(Persona):
             self.leech = 0
 
     def act(self):
-        self.user.visit("http://localhost:8000/webplayer.html")
+        self.user.visit("http://host/webplayer.html")
         if self.leech == 1:
             self.user.toggle_gateway()
         self.user.watch_hash(self.hash)

@@ -23,7 +23,7 @@ class SkipperPersona(Persona):
         return self.user.browser.evaluate_script("player.time()")
 
     def act(self):
-        self.user.visit("http://localhost:8000/webplayer.html")
+        self.user.visit("http://host/webplayer.html")
         self.user.watch_hash(self.hash)
         duration = None
         while duration is None:

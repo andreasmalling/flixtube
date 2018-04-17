@@ -16,7 +16,7 @@ class IncognitoPersona(Persona):
             self.seconds_left = DEFAULTSECONDSLEFT
 
     def act(self):
-        self.user.visit("http://localhost:8000/webplayer.html")
+        self.user.visit("http://host/webplayer.html")
         self.user.watch_hash(self.hash)
         duration = None
         while duration is None:
