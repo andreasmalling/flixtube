@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from pymongo import MongoClient
-client = MongoClient("172.19.0.2", 27017) #temporary ip for testing
+# client = MongoClient("172.19.0.2", 27017) #temporary ip for testing
+client = MongoClient("mongo", 27017)
 
 
 def plotFromCollection(collectionName, x, y):
