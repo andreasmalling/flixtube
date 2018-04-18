@@ -2,28 +2,46 @@ version: '3.5'
 services:
     bootstrap:
         image: andreasmalling/ft_bootstrap
-    client:
+    user_contentadder:
         image: andreasmalling/ft_user
 
-        #these 2 are only necessary for when we want to see the containers browser
-        environment:
-            - DISPLAY=$DISPLAY
         volumes:
-          - /tmp/.X11-unix:/tmp/.X11-unix
           - ./video_dashed/:/usr/src/app/video_dashed/
 
-        # commands for the flixtube client
-        command: ["-m"]
+        command: ["--host" ,"IDLE"]
+
+        depends_on:
+          - bootstrap
+
+    user_manual:
+        # manual user with debug purpose 
+        image: andreasmalling/ft_user
+
+        privileged: true
+
+        environment:
+            - DISPLAY=$DISPLAY #Display
+        
+        volumes:
+          - /tmp/.X11-unix:/tmp/.X11-unix #Display
+          - /dev/snd:/dev/snd #Sound
+          - ./video_dashed/:/usr/src/app/video_dashed/
+
+        command: ["-m", "IDLE"]
 
         depends_on:
           - metric
-          - network_logger
+          - network
           - host
           - bootstrap
+    
     host:
         #python server hosting the website for the web player
         # the web player can be found on "host:8000/webplayer.html"
-        image: kgoyo/flixtube_host
+        image: andreasmalling/ft_host
+
+        volumes:
+          - ./website:/usr/src/app/
 
     metric:
         image: kgoyo/flixmetric
@@ -33,8 +51,8 @@ services:
         # Dependant on the 'mongo' container running, since it's our storage
         depends_on:
             - mongo
-    network_logger:
-        image: kgoyo/flixmetric
+    network:
+        image: andreasmalling/ft_network
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock
     mongo:
