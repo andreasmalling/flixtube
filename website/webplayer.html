@@ -15,9 +15,46 @@
 </head>
 
 <body>
-<h1>Dash.JS Web player</h1>
+
+<div style="width: 100%; display: table;">
+    <div style="display: table-row">
+        <div style="width: 300px; display: table-cell;">
+            <h2>Client</h2>
+            <p id="titleIP">
+                IP: unknown
+            </p>
+            <p>
+                Public Gateway URL <br/>
+                <input title="Alt. Gateway" size="22" type="text" id="altGateway">
+                <button id="altGatewayBtn" onclick="setPublicGateway()">Overwrite</button>
+            </p>
+            <p>
+                Use Local Gateway <input title="Local option" type="checkbox" id="localCheck" checked>
+            </p>
+        </div>
+
+        <div style="display: table-cell;">
+            <h2>Content Source</h2>
+            <input title="IPFS Hash" type="text" id="videoHash" size="42">
+            <button id="loadHashBtn" onclick="loadHash()">Load hash</button>
+
+            <p>
+                or &nbsp;
+                <select title="Select Demo" id="list" onchange="showSelect(this)">
+                    <option value="">Select Demo</option>
+                </select>
+            </p>
+
+            <p id="info">
+                <b>Manifest url:</b> none selected
+            </p>
+        </div>
+    </div>
+
+</div>
 
 <div>
+    <h2>Video Player</h2>
     <video id="videoPlayer" controls></video><br/>
 
     <input title="New Seek Position" type="number" id="seekPos">
@@ -26,28 +63,8 @@
     <button id="seekRandomBtn" onclick="seekRandom()">I feel lucky</button>
 </div>
 
-<div>
-    <h2>Source</h2>
-    <select title="Select Demo" id="list" onchange="showSelect(this)">
-        <option value="">Select Demo</option>
-    </select>
-
-    <p>or</p>
-
-    <input title="IPFS Hash" type="text" id="videoHash" size="42">
-    <button id="loadHashBtn" onclick="loadHash()">Load hash</button>
-
-    <input title="Local option" type="checkbox" id="localCheck" checked> Local Gateway
-
-    <h3>Source-info</h3>
-    <p id="info">
-        <b>Selected Video:</b> none<br/>
-        <b>Manifest url:</b> none
-    </p>
-</div>
-
 <script>
-    const publicGate = "https://gateway.ipfs.io/ipfs/";
+    let publicGate = "https://gateway.ipfs.io/ipfs/";
     const localGate = "http://127.0.0.1:8080/ipfs/";
 
     let player;
@@ -61,10 +78,14 @@
     const newPos = document.getElementById('seekPos');
     const selectList = document.getElementById('list');
     const localCheck = document.getElementById('localCheck');
+    const titleIP = document.getElementById('titleIP')
+    const altGW = document.getElementById('altGateway');
 
     window.onload = bindUI();
 
     function bindUI() {
+        altGW.value = publicGate;
+
         <!-- Populate select list -->
         let manifests = [
             {
@@ -76,12 +97,12 @@
                 "Video_Name": "Dash.JS Quick Start"
             },
             {
-                "URL": localGate + "QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs",
-                "Video_Name": "Bitmovin (IPFS)"
+                "URL": "[IPFS GATEWAY PLACEHOLDER]" + "QmdSuHL4rof1j5zv3iSoy7rxQc4kk6yNHcFxAKd9e1CeBs",
+                "Video_Name": "IPFS: Bitmovin"
             },
             {
-                "URL": localGate + "QmZ5BRtWxuVPWTSfDdX7d3LQhdM6D7fjJYW9Tacw6fbX3U",
-                "Video_Name": "SH (IPFS, Seg: 3000)"
+                "URL": "[IPFS GATEWAY PLACEHOLDER]" + "QmZ5BRtWxuVPWTSfDdX7d3LQhdM6D7fjJYW9Tacw6fbX3U",
+                "Video_Name": "IPFS: Steamed Hams"
             },
         ];
 
@@ -119,7 +140,9 @@
             key;
 
         function iterateIP(ip) {
-            if (!localIPs[ip]) {id = ip;}
+            if (!localIPs[ip]) {
+                id = ip;
+                titleIP.innerHTML = "IP: " + id;}
             localIPs[ip] = true;
         }
 
@@ -147,16 +170,12 @@
 
     function showSelect(list) {
         let video_name = list.options[list.selectedIndex].text;
-        let url = list.value;
+        let url = list.value.replace("[IPFS GATEWAY PLACEHOLDER]", gateway);
         show(url, video_name)
     }
 
     function show(url, video_name) {
-        info.innerHTML = '<b>Selected Video: </b>' +
-            video_name +
-            '</br>' +
-            '<b>Manifest url: </b><a href="' +
-            url + '" target="_blank">' + url + '</a>';
+        info.innerHTML = '<b>Manifest url: </b><a href="' + url + '" target="_blank">' + url + '</a>';
         player = dashjs.MediaPlayer().create();
         player.initialize(document.querySelector("#videoPlayer"), url, true);
 
@@ -197,6 +216,12 @@
         let videoHash = document.getElementById('videoHash').value;
         let url = gateway + videoHash;
         show(url, videoHash);
+    }
+
+    function setPublicGateway() {
+        publicGate = altGW.value;
+        gateway = publicGate;
+        localCheck.checked = false;
     }
 </script>
 </body>
