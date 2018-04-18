@@ -17,6 +17,7 @@ services:
 
         depends_on:
           - metric
+          - network_logger
           - host
           - bootstrap
     host:
@@ -32,6 +33,10 @@ services:
         # Dependant on the 'mongo' container running, since it's our storage
         depends_on:
             - mongo
+    network_logger:
+        image: kgoyo/flixmetric
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
     mongo:
         image: mongo:3.6.3
 
