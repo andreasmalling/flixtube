@@ -74,6 +74,15 @@ app.post("/metrics/wait", function (req, res, ignore) { //ignore = next
     }
 });
 
+// app.post("/metrics/network", function (req, res, ignore) {
+//     try {
+//
+//     } catch (err) {
+//
+//     }
+//
+// })
+
 app.listen(8081);
 
 // create mongo db collection instance
