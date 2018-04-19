@@ -47,11 +47,11 @@ parser.add_argument("--head", action="store_true", dest="browserHead", default=F
                   help="display browser while running persona")
 
 # IPFS Options
-parser.add_argument("--no-ipfs", action="store_false", dest="ipfsDaemon", default=True,
+parser.add_argument("--no-ipfs", action="store_false", dest="ipfs", default=True,
                       help="don't run ipfs daemon")
 parser.add_argument("-g", "--global", action="store_false", dest="ipfsLocal", default=True,
                       help="use default bootstrap for global access (Default: Local bootstrap")
-parser.add_argument("--host", action="store_true", dest="ipfsHost", default=False,
+parser.add_argument("-s", "--seed", action="store_true", dest="ipfsHost", default=False,
                       help="add content from folder videos_dashed to IPFS")
 
 # Persona options
@@ -61,17 +61,16 @@ parser.add_argument("-l", "--leave", action="store_true", dest="leave_website", 
 # Parse options
 args = parser.parse_args()
 
-# Init IPFS
-ipfs = Ipfs()
-
 # Handle Options
-if args.ipfsLocal:
-    ipfs.bootstrap_local()
+if args.ipfs:
+    ipfs = Ipfs()
 
-if args.ipfsHost:
-    ipfs.add("/usr/src/app/video_dashed/")
+    if args.ipfsLocal:
+        ipfs.bootstrap_local()
 
-if args.ipfsDaemon:
+    if args.ipfsHost:
+        ipfs.add("/usr/src/app/video_dashed/")
+
     ipfs.run_daemon()
 
 elif args.manual:
