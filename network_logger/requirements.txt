@@ -1,0 +1,2 @@
+docker_py==1.10.6
+pymongo==3.6.1
