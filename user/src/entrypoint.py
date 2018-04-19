@@ -73,7 +73,7 @@ if args.ipfs:
 
     ipfs.run_daemon()
 
-elif args.manual:
+if args.manual:
     subprocess.run(["google-chrome", "--no-first-run", "host/webplayer.html"])
 else:
     personaType = args.persona
