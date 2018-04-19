@@ -1,7 +1,7 @@
 version: '3.4'
 
+# basic user setup, used for extending
 x-user: &user-template
-  # basic user setup, used for extending
   image: andreasmalling/ft_user
   build: ./user
   volumes:
@@ -12,57 +12,89 @@ x-user: &user-template
     - network
     - host
 
-services:    
-    user_seed:
-      # user which adds content from videos_dashed to local IPFS network
-      <<: *user-template
-      command: ["--seed" ,"IDLE"]
+services:
+#  _____  ______ _____   _____  ____  _   _           _____ 
+# |  __ \|  ____|  __ \ / ____|/ __ \| \ | |   /\    / ____|
+# | |__) | |__  | |__) | (___ | |  | |  \| |  /  \  | (___  
+# |  ___/|  __| |  _  / \___ \| |  | | . ` | / /\ \  \___ \ 
+# | |    | |____| | \ \ ____) | |__| | |\  |/ ____ \ ____) |
+# |_|    |______|_|  \_\_____/ \____/|_| \_/_/    \_\_____/ 
+#                                                          
+  
+  # user for debugging, with sound and display pass-through
+  user_manual:
+    <<: *user-template
+    privileged: true
+    environment:
+      - DISPLAY=$DISPLAY
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /dev/snd:/dev/snd
+    command: ["-m", "IDLE"]
 
-    user_manual:
-      # user for debugging
-      <<: *user-template
-      privileged: true  #Sound
-      environment:
-        - DISPLAY=$DISPLAY  #Display
-      volumes:
-        - /tmp/.X11-unix:/tmp/.X11-unix  #Display
-        - /dev/snd:/dev/snd  #Sound
-      command: ["-m", "IDLE"]
-        
+  # user which adds content from videos_dashed to local IPFS network
+  user_seed:
+    <<: *user-template
+    command: ["--seed" ,"IDLE"]
+  
+  user_binge:
+    <<: *user-template
+    command: ["BINGE"]
 
-    bootstrap:
-      # IPFS node used for bootstraping local network
-      image: andreasmalling/ft_bootstrap
+  user_incognito:
+    <<: *user-template
+    command: ["INCOGNITO"]
+  
+  user_skipper:
+    <<: *user-template
+    command: ["SKIPPER"]
 
-    host:
-      # python server hosting the website for the web player
-      # the web player can be found on "host/webplayer.html"
-      image: andreasmalling/ft_host
-      build: ./website
-      volumes:
-        - ./website:/usr/src/app/
+  user_idle:
+    <<: *user-template
+    command: ["IDLE"]
 
-    metric:
-      # mongoDB client to whom users report
-      image: kgoyo/flixmetric
-      build: ./metric_server
-      restart: always
-      # Dependant on the 'mongo' container running, since it's our storage
-      depends_on:
-          - mongo
-    
-    network:
-      # collects network data from user containers
-      image: andreasmalling/ft_network
-      build: ./network_logger
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
-      depends_on:
-          - mongo
-    
-    mongo:
-      # mongoDB microservice
-      image: mongo:3.6.3
-      volumes:
-        - ./data:/data/db
-      command: --smallfiles --noprealloc
+#  _______ _    _ ______      _____  ______  _____ _______ 
+# |__   __| |  | |  ____|    |  __ \|  ____|/ ____|__   __|
+#    | |  | |__| | |__       | |__) | |__  | (___    | |   
+#    | |  |  __  |  __|      |  _  /|  __|  \___ \   | |   
+#    | |  | |  | | |____     | | \ \| |____ ____) |  | |   
+#    |_|  |_|  |_|______|    |_|  \_\______|_____/   |_|   
+#                                                          
+
+  # IPFS node used for bootstraping local network
+  bootstrap:
+    image: andreasmalling/ft_bootstrap
+
+  # python server hosting the website for the web player
+  # the web player can be found on "host/webplayer.html"
+  host:
+    image: andreasmalling/ft_host
+    build: ./website
+    volumes:
+      - ./website:/usr/src/app/
+
+  # mongoDB client to whom users report
+  metric:
+    image: andreasmalling/ft_metric
+    build: ./metric_server
+    restart: always
+    # Dependant on the 'mongo' container running, since it's our storage
+    depends_on:
+        - mongo
+  
+  # collects network data from user containers
+  network:
+    image: andreasmalling/ft_network
+    build: ./network_logger
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+        - mongo
+  
+  # mongoDB microservice
+  mongo:
+    image: mongo:3.6.3
+    volumes:
+      - ./data:/data/db
+    command: --smallfiles --noprealloc
+  
