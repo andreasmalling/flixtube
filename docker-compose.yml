@@ -1,64 +1,67 @@
-version: '3.5'
-services:
-    bootstrap:
-        image: andreasmalling/ft_bootstrap
-    user_contentadder:
+version: '2.1'
+services:    
+    user:
+        # basic user setup, used for extending
         image: andreasmalling/ft_user
-
+        build: ./user
+        #privileged: true                    #Sound
+        environment:
+          - DISPLAY=$DISPLAY                #Display
         volumes:
+          - /tmp/.X11-unix:/tmp/.X11-unix   #Display
+          - /dev/snd:/dev/snd               #Sound
           - ./video_dashed/:/usr/src/app/video_dashed/
 
-        command: ["--host" ,"IDLE"]
-
+    user_seed:
+        # user which adds content from videos_dashed to local IPFS network
+        extends: user
         depends_on:
           - bootstrap
+        command: ["--seed" ,"IDLE"]
 
     user_manual:
         # manual user with debug purpose 
-        image: andreasmalling/ft_user
-
-        privileged: true
-
-        environment:
-            - DISPLAY=$DISPLAY #Display
-        
-        volumes:
-          - /tmp/.X11-unix:/tmp/.X11-unix #Display
-          - /dev/snd:/dev/snd #Sound
-          - ./video_dashed/:/usr/src/app/video_dashed/
-
-        command: ["-m", "IDLE"]
-
+        extends: user
         depends_on:
+          - bootstrap
+        command: ["-m", "IDLE"]
+        
+
+    bootstrap:
+        # IPFS node used for bootstraping local network
+        image: andreasmalling/ft_bootstrap
+        depends_on: # added for minimizing depends_on for users
           - metric
           - network
           - host
-          - bootstrap
-    
-    host:
-        #python server hosting the website for the web player
-        # the web player can be found on "host:8000/webplayer.html"
-        image: andreasmalling/ft_host
 
+    host:
+        # python server hosting the website for the web player
+        # the web player can be found on "host/webplayer.html"
+        image: andreasmalling/ft_host
+        build: ./website
         volumes:
           - ./website:/usr/src/app/
 
     metric:
+        # mongoDB client to whom users report
         image: kgoyo/flixmetric
-
+        build: ./metric_server
         restart: always
-
         # Dependant on the 'mongo' container running, since it's our storage
         depends_on:
             - mongo
+    
     network:
+        # collects network data from user containers
         image: andreasmalling/ft_network
+        build: ./network_logger
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock
+    
     mongo:
+        # mongoDB microservice
         image: mongo:3.6.3
-
         volumes:
           - ./data:/data/db
-
         command: --smallfiles --noprealloc
