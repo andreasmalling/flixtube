@@ -1,8 +1,8 @@
 #!/usr/bin/python3
-
 import subprocess
 import argparse
 from enum import Enum, unique
+from time import sleep
 
 from User import User
 from BingePersona import BingePersona
@@ -51,6 +51,8 @@ parser.add_argument("--no-ipfs", action="store_false", dest="ipfsDaemon", defaul
                       help="don't run ipfs daemon")
 parser.add_argument("-g", "--global", action="store_false", dest="ipfsLocal", default=True,
                       help="use default bootstrap for global access (Default: Local bootstrap")
+parser.add_argument("--host", action="store_true", dest="ipfsHost", default=False,
+                      help="add content from folder videos_dashed to IPFS")
 
 # Persona options
 parser.add_argument("-l", "--leave", action="store_true", dest="leave_website", default=False,
@@ -66,10 +68,13 @@ ipfs = Ipfs()
 if args.ipfsLocal:
     ipfs.bootstrap_local()
 
+if args.ipfsHost:
+    ipfs.add("/usr/src/app/video_dashed/")
+
 if args.ipfsDaemon:
     ipfs.run_daemon()
 
-if args.manual:
+elif args.manual:
     subprocess.run(["google-chrome", "--no-first-run", "host/webplayer.html"])
 else:
     personaType = args.persona
