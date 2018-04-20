@@ -179,6 +179,9 @@ f = open(mpd_filepath, "w")
 mpd.writexml(f)
 f.close()
 
+# print IPFS hash of MPD
+print( ipfs_hash_path(mpd_filepath))
+
 ### Move newly created files to output destination ###
 makeFolder(dashed + "/" + output_dir)
 move(os.path.join(os.getcwd(), video_folder_name), dashed + "/" + output_dir)
