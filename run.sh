@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 ARG_ENV=${1:-envs/default.env}
+TIMER=${2:-0}
 COMPOSE_ENV=.env
 SCALES=$(cat $ARG_ENV | grep -e ^SCALE)
 
@@ -11,7 +12,7 @@ clean_env() {
 }
 
 run_docker_compose() {
-    docker-compose up 							\
+    timeout $TIMER docker-compose up 							\
         --scale bootstrap=${SCALE_BOOT:-1}		\
         --scale host=${SCALE_HOST:-1}  			\
         --scale mongo=${SCALE_MONGO:-1} 		\
@@ -53,6 +54,10 @@ cp --force $ARG_ENV $COMPOSE_ENV
 
 # Run the docker-compose command
 run_docker_compose
+
+if [ $? -eq "124" ]; then
+    echo "Timed out after $TIMER"
+fi
 
 # Clean up
 clean_env
