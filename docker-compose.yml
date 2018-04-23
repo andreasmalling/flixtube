@@ -29,8 +29,6 @@ services:
     privileged: true
     environment:
       - DISPLAY=$DISPLAY
-    env_file:
-         - ./local_test_setup/.env
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /dev/snd:/dev/snd
