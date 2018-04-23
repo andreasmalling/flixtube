@@ -2,7 +2,6 @@
 ARG_ENV=${1:-envs/default.env}
 COMPOSE_ENV=.env
 SCALES=$(cat $ARG_ENV | grep -e ^SCALE)
-DEFAULT_SCALES="SCALE_BOOT=1\n SCALE_HOST=1\n SCALE_MONGO=1\n SCALE_METRIC=1\n SCALE_NETWORK=1\n SCALE_SEED=1"
 
 clean_env() {
     echo "Cleaning up environment"
@@ -43,7 +42,7 @@ else
     echo "No scales found in" $ARG_ENV
     read -p "Continue (y/n)?" choice
     case "$choice" in
-        y|Y ) echo "yes";;
+        y|Y ) echo "👌";;
         n|N ) exit 0;;
         * ) echo "invalid";;
     esac
