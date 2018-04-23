@@ -107,6 +107,7 @@ services:
   mongo:
     image: mongo:3.6.3
     volumes:
-      - ./data:/data/db
+      - ./data/db:/data/db
+      - ./data/dump:/data/dump
     command: --smallfiles --noprealloc
   

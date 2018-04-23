@@ -19,7 +19,7 @@ parser.add_argument('--version', action='version', version=version)
 parser.add_argument("-s", type=int, action="store", dest="segment_duration",
                     help="set segement duration for DASHing")
 
-parser.add_argument("-d", dest="output_duration",
+parser.add_argument("-d", type=int, action="store", dest="output_duration",
                   help="set duration of total video output")
 parser.add_argument("-c", dest="output_crf",
                   help="set CRF of video output")
@@ -35,6 +35,7 @@ group.add_argument("-n", action="store_false", dest="overwrite",
 args = parser.parse_args()
 
 print(version)
+print(args)
 
 input_filepath = args.source
 
@@ -89,9 +90,9 @@ if (args.output_crf is not None):
     output_dir += "_crf-" + args.output_crf
 
 if (args.output_duration is not None):
-    ffmpeg_options.extend(["-t", args.output_duration])
-    output_filename += "_dur-" + args.output_duration
-    output_dir += "_dur-" + args.output_duration
+    ffmpeg_options.extend(["-t", str(args.output_duration)])
+    output_filename += "_dur-" + str(args.output_duration)
+    output_dir += "_dur-" + str(args.output_duration)
 
 mpd_filepath = input_name + ".mpd"
 segment_formating = input_name + "_$RepresentationID$/Segment_$Number$$Init=0$"
