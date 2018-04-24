@@ -7,6 +7,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
 const mongo_url = "mongodb://mongo:27017/flixtube_db";
+// const mongo_url = "mongodb://localhost:27017/flixtube_db";
+
 const app = express();
 
 // DB constants
@@ -14,6 +16,7 @@ const DBNAME = "flixtube_db";
 const VIDEOCOLLECTION = "video";
 const AUDIOCOLLECTION = "audio";
 const WAITCOLLECTION = "wait";
+const PERSONACOLLECTION = "persona";
 
 const OK = 200;
 const BADREQ = 420;
@@ -26,6 +29,9 @@ app.use(function (ignore, res, next) {  //ignore req
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
+
+// enable getting remote ip
+app.enable("trust proxy");
 
 //mongo db vars
 var database = null;
@@ -74,16 +80,22 @@ app.post("/metrics/wait", function (req, res, ignore) { //ignore = next
     }
 });
 
-// app.post("/metrics/network", function (req, res, ignore) {
-//     try {
-//
-//     } catch (err) {
-//
-//     }
-//
-// })
+app.get("/metrics/persona/:type", function (req, res, ignore) {
+    try {
+        var type = req.params.type;
+        var ip = req.ip;
+        var json = {
+            ip: ip,
+            type: type
+        };
+        insertInDatabase(PERSONACOLLECTION, json);
+        res.sendStatus(OK);
+    } catch (err) {
+        res.status(BADREQ).send("error: " +  err.toString());
+    }
+});
 
-app.listen(8081);
+app.listen(8081, "127.0.0.1");
 
 // create mongo db collection instance
 
@@ -106,6 +118,7 @@ MongoClient.connect(mongo_url, function (err, db) {
     createCollection(VIDEOCOLLECTION);
     createCollection(AUDIOCOLLECTION);
     createCollection(WAITCOLLECTION);
+    createCollection(PERSONACOLLECTION);
 });
 
 

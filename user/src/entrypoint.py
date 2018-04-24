@@ -79,6 +79,9 @@ else:
     personaType = args.persona
     options = args.persona_options
 
+    #Log persona type to database
+    r = requests.get('metric/metrics/persona/' + personaType.name)
+
     user = User(args.browserHead)
 
     # Persona Behaviour
