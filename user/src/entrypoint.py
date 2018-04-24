@@ -31,6 +31,9 @@ class PersonaType(Enum):
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 
+# Default options
+parser.set_defaults(video_hash="QmbVvwx8KidXo8Awr6GoF1QTrfkkuZsQjg33onkvwCf8ap")
+
 # Positional Arguments
 parser.add_argument('persona', type=PersonaType.from_string, choices=list(PersonaType))
 parser.add_argument('persona_options', metavar='OPTION', type=int, nargs='*',
@@ -43,7 +46,7 @@ parser.add_argument('persona_options', metavar='OPTION', type=int, nargs='*',
 # Browser Options
 parser.add_argument("-m", "--manual", action="store_true", dest="manual", default=False,
                   help="spawn browser for manual interaction")
-parser.add_argument("--head", action="store_true", dest="browserHead", default=False,
+parser.add_argument("--head", action="store_false", dest="browserHead", default=True,
                   help="display browser while running persona")
 
 # IPFS Options
@@ -51,12 +54,14 @@ parser.add_argument("--no-ipfs", action="store_false", dest="ipfs", default=True
                       help="don't run ipfs daemon")
 parser.add_argument("-g", "--global", action="store_false", dest="ipfsLocal", default=True,
                       help="use default bootstrap for global access (Default: Local bootstrap")
-parser.add_argument("-s", "--seed", action="store_true", dest="ipfsHost", default=False,
-                      help="add content from folder videos_dashed to IPFS")
+parser.add_argument("-s", "--seed", action="store_true", dest="ipfsSeed", default=False,
+                      help="seeds content from folder videos_dashed in the IPFS network")
 
 # Persona options
 parser.add_argument("-l", "--leave", action="store_true", dest="leave_website", default=False,
                   help="makes persona leave IPFS network after finishing video (default False)")
+parser.add_argument("-v", "--video-hash", dest="video_hash",
+                  help="set hash of video watched by persona")
 
 # Parse options
 args = parser.parse_args()
@@ -68,7 +73,7 @@ if args.ipfs:
     if args.ipfsLocal:
         ipfs.bootstrap_local()
 
-    if args.ipfsHost:
+    if args.ipfsSeed:
         ipfs.add("/usr/src/app/video_dashed/")
 
     ipfs.run_daemon()
@@ -85,7 +90,7 @@ else:
     user = User(args.browserHead)
 
     # Persona Behaviour
-    hash = "QmNsdjY3GoRbubyAeR8ZimTCCp8v11ryhJxfe9hqngRRCc"
+    hash = args.video_hash
     persona = None
 
     print(personaType)

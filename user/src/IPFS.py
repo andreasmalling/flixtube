@@ -16,4 +16,4 @@ class Ipfs:
         subprocess.run(["ipfs", "bootstrap", "add", "default"])
 
     def add(self, path):
-        subprocess.run(["ipfs", "add", "-r", path])
+        subprocess.run(["ipfs", "add", "-r", "-Q", path])

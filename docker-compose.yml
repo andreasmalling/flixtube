@@ -1,11 +1,13 @@
-version: '3.4'
+version: '3.5'
 
 # basic user setup, used for extending
+# source: https://medium.com/@kinghuang/docker-compose-anchors-aliases-extensions-a1e4105d70bd
 x-user: &user-template
   image: andreasmalling/ft_user
   build: ./user
   volumes:
     - ./video_dashed/:/usr/src/app/video_dashed/
+  command: "IDLE"
   depends_on:
     - bootstrap
     - metric
@@ -22,7 +24,7 @@ services:
 #                                                          
   
   # user for debugging, with sound and display pass-through
-  user_manual:
+  user_debug:
     <<: *user-template
     privileged: true
     environment:
@@ -30,28 +32,36 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /dev/snd:/dev/snd
-    command: ["-m", "IDLE"]
+    command: ${USER_DEBUG:- --head IDLE}
 
   # user which adds content from videos_dashed to local IPFS network
   user_seed:
     <<: *user-template
-    command: ["--seed" ,"IDLE"]
+    command: ${USER_SEED:- --seed IDLE}
   
-  user_binge:
+  user_1:
     <<: *user-template
-    command: ["BINGE"]
+    command: ${USER_1}
 
-  user_incognito:
+  user_2:
     <<: *user-template
-    command: ["INCOGNITO"]
-  
-  user_skipper:
-    <<: *user-template
-    command: ["SKIPPER"]
+    command: ${USER_2}
 
-  user_idle:
+  user_3:
     <<: *user-template
-    command: ["IDLE"]
+    command: ${USER_3}
+
+  user_4:
+    <<: *user-template
+    command: ${USER_4}
+
+  user_5:
+    <<: *user-template
+    command: ${USER_5}
+
+  user_6:
+    <<: *user-template
+    command: ${USER_6}
 
 #  _______ _    _ ______      _____  ______  _____ _______ 
 # |__   __| |  | |  ____|    |  __ \|  ____|/ ____|__   __|
@@ -95,6 +105,7 @@ services:
   mongo:
     image: mongo:3.6.3
     volumes:
-      - ./data:/data/db
+      - ./data/db:/data/db
+      - ./data/dump:/data/dump
     command: --smallfiles --noprealloc
   
