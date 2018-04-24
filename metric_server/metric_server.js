@@ -46,9 +46,9 @@ function insertInDatabase(collection, jsonElem) {
     });
 }
 
-app.get("/", function (req, res, next) {
-   res.send("IT JUST WORKS");
-});
+// app.get("/", function (req, res, next) {
+//    res.send("IT JUST WORKS");
+// });
 
 
 app.post("/metrics", function (req, res, ignore) {   // ignore = next (?)
@@ -83,7 +83,7 @@ app.post("/metrics/wait", function (req, res, ignore) { //ignore = next
 app.get("/metrics/persona/:type", function (req, res, ignore) {
     try {
         var type = req.params.type;
-        var ip = req.ip;
+        var ip = req.ip.replace(/^::ffff:/, "");
         var json = {
             ip: ip,
             type: type
@@ -95,7 +95,7 @@ app.get("/metrics/persona/:type", function (req, res, ignore) {
     }
 });
 
-app.listen(8081, "127.0.0.1");
+app.listen(8081);
 
 // create mongo db collection instance
 
