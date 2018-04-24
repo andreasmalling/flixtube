@@ -13,7 +13,7 @@ if __name__ == '__main__':
         pull_rate = int(sys.argv[1])
 
     mongo_client = MongoClient("mongo", 27017)          # use this in docker network
-    # mongo_client = MongoClient("127.0.0.1", 27017)    # use this in testing
+    # mongo_client = MongoClient("127.0.0.1", 27017)     # use this in testing
     db = mongo_client["flixtube_db"]
 
     while True:
