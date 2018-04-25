@@ -1,0 +1,19 @@
+version: '3.5'
+services:
+  # plot service
+  plot:
+    image: andreasmalling/ft_plot
+    build: ./plot
+    command: ""
+    volumes:
+      - ./data/plot/:/usr/src/app/output/
+    depends_on:
+      - mongo
+  
+  # mongoDB microservice
+  mongo:
+    image: mongo:3.6.3
+    volumes:
+      - ./data/db:/data/db
+      - ./data/dump:/data/dump
+    command: --smallfiles --noprealloc

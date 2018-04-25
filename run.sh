@@ -29,6 +29,10 @@ run_docker_compose() {
         --force-recreate
 }
 
+run_plot() {
+    docker-compose -f plot-compose.yml up
+}
+
 # Grab ctrl-c for cleanup
 trap "clean_env" INT
 
@@ -61,3 +65,5 @@ fi
 
 # Clean up
 clean_env
+
+run_plot
