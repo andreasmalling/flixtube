@@ -2,11 +2,11 @@
 
 import argparse
 import sys
-import time
 from subprocess import PIPE, Popen, TimeoutExpired
 from pathlib import Path
 
 default_env = Path.cwd() / "envs" / "default.env"
+mongo_env =  Path.cwd() / "envs" / "mongo.env"
 compose_env_file = Path.cwd() / ".env"
 
 def stop_docker_compose() :
@@ -35,11 +35,14 @@ def run_docker_compose(scales, run_users=True) :
     return Popen(["docker-compose", "up"] + main_scale + user_scale, stdout=PIPE)
 
 
-def set_timeout(proc, timeout, func) :
+def set_timeout(proc, timeout, func=None) :
     try:
         outs, errs = proc.communicate(timeout=timeout)
     except TimeoutExpired :
-        func()
+        if func is None :
+            print("Timed out after", timeout, "seconds.")
+        else :
+            func()
 
 
 def query_yes_no() :
@@ -81,6 +84,12 @@ def setup_args():
                         default="0",
                         help="set timeout of experiment in seconds")
 
+    parser.add_argument("-e",
+                        dest="export",
+                        action="store_true",
+                        default="false",
+                        help="export results")
+
     args = parser.parse_args()
 
 
@@ -89,8 +98,19 @@ def clean_env() :
         compose_env_file.unlink()
 
 
+def export() :
+    print("Keeping mongo alive")
+    clean_env()
+    mongo_scale = import_scales(mongo_env)
+    proc = run_docker_compose(mongo_scale, False)
+    # TODO: Add export from mongo + plotting?
+
+
 def import_scales(env_file):
     scales = {}
+
+    # Clean Up env
+    clean_env()
 
     # Create .env for docker-compose
     compose_env_file.symlink_to(env_file)
@@ -119,29 +139,36 @@ def import_scales(env_file):
     return scales
 
 
-setup_args()
+def main() :
+    setup_args()
 
-# Clean slate
-stop_docker_compose()
-clean_env()
+    # Clean slate
+    stop_docker_compose()
 
-# Possible setup of stable network
-if args.env_stable_file is not None:
-    print("# == SETUP OF STABLE NETWORK == #")
+    # Possible setup of stable network
+    if args.env_stable_file is not None:
+        print("# == SETUP OF STABLE NETWORK == #")
 
-    main_scales = import_scales(args.env_stable_file)
-    proc = run_docker_compose(main_scales, run_users=False)
+        main_scales = import_scales(args.env_stable_file)
+        proc = run_docker_compose(main_scales, run_users=False)
 
-    set_timeout(proc, args.setup_time, clean_env() )
+        set_timeout(proc, args.setup_time )
 
+    # Run exp
     print("# == SETUP OF EXP. NETWORK == #")
+    exp_scales = import_scales(args.env_exp_file)
+    proc = run_docker_compose(exp_scales, run_users=True)
 
-# Run exp
-exp_scales = import_scales(args.env_exp_file)
-proc = run_docker_compose(exp_scales, run_users=True)
+    # Possible timeout of exp
+    if args.timeout > 0:
+        set_timeout(proc, args.timeout )
 
-# Possible timeout of exp
-if args.timeout > 0:
-    set_timeout(proc, args.timeout, lambda: proc.send_signal(2) ) # SIGINT
+    # Export results
+    if args.export:
+        export()
+    else:
+        stop_docker_compose()
 
-clean_env()
+
+if __name__ == "__main__":
+    main()
