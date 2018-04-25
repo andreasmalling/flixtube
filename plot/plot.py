@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import pymongo
 import statistics
+import dateutil
+import time
 
 # collections
 VIDEO = "video"
@@ -8,6 +10,11 @@ AUDIO = "audio"
 WAIT = "wait"
 PERSONA = "persona"
 NETWORK = "network"
+
+RXBYTES = "rx_bytes"
+TXBYTES = "tx_bytes"
+RXPACKETS = "rx_packets"
+TXPACKETS = "tx_packets"
 
 # init mongo client
 client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
@@ -26,11 +33,14 @@ db = client["flixtube_db"]
 def main():
     users = [persona for persona in db[PERSONA].find()]
 
-    plot_user_data("latency", users, AUDIO)
-    plot_user_data("download", users, AUDIO)
-    plot_user_data("latency", users, VIDEO)
-    plot_user_data("download", users, VIDEO)
-    # plot_network_data()
+    # plot_user_data("latency", users, AUDIO)
+    # plot_user_data("download", users, AUDIO)
+    # plot_user_data("latency", users, VIDEO)
+    # plot_user_data("download", users, VIDEO)
+    plot_network_data(users, TXPACKETS)
+    plot_network_data(users, RXPACKETS)
+    plot_network_data(users, TXBYTES)
+    plot_network_data(users, RXBYTES)
 
     # plotFromCollection("video", "seg", "latency")
 
@@ -59,8 +69,17 @@ def plot_user_data(yname , users, collection):
 
     plt.show()
 
-def plot_network_data():
-    pass
+
+def plot_network_data(users, yname):
+    for user in users:
+        xs = []
+        ys = []
+        for res in db[NETWORK].find({"ip": user["ip"]}).sort("ts", pymongo.ASCENDING):
+            xs += [int(time.mktime(dateutil.parser.parse(res["ts"]).timetuple()))]
+            ys += [res["net"][yname]]
+        plt.plot(xs, ys)
+    plt.title("network " + yname)
+    plt.show()
 
 
 if __name__ == "__main__":
