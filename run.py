@@ -6,14 +6,16 @@ from subprocess import PIPE, Popen, TimeoutExpired
 from pathlib import Path
 
 default_env = Path.cwd() / "envs" / "default.env"
-mongo_env =  Path.cwd() / "envs" / "mongo.env"
+mongo_env = Path.cwd() / "envs" / "mongo.env"
 compose_env_file = Path.cwd() / ".env"
 
-def stop_docker_compose() :
+
+def stop_docker_compose():
     stop = Popen(["docker-compose", "down"])
     stop.wait()
 
-def run_docker_compose(scales, run_users=True) :
+
+def run_docker_compose(scales, run_users=True):
     if not run_users:
         scales = dict((key, value) for key, value in scales.items() if not key.startswith("SCALE_USER"))
 
@@ -35,19 +37,19 @@ def run_docker_compose(scales, run_users=True) :
     return Popen(["docker-compose", "up"] + main_scale + user_scale, stdout=PIPE)
 
 
-def set_timeout(proc, timeout, func=None) :
+def set_timeout(proc, timeout, func=None):
     try:
         outs, errs = proc.communicate(timeout=timeout)
-    except TimeoutExpired :
-        if func is None :
+    except TimeoutExpired:
+        if func is None:
             print("Timed out after", timeout, "seconds.")
-        else :
+        else:
             func()
 
 
-def query_yes_no() :
-    yes = {'yes','y'}
-    no = {'no','n', ''}
+def query_yes_no():
+    yes = {'yes', 'y'}
+    no = {'no', 'n', ''}
     sys.stdout.write("Continue? [y/N]")
     choice = input().lower()
     if choice in yes:
@@ -76,7 +78,7 @@ def setup_args():
                         dest="setup_time",
                         type=int,
                         default="60",
-                        help="set time given to create stable network, before invoking experiment. (Default: 60 seconds)")
+                        help="set time given to start stable network, before invoking exp. (Default: 60 seconds)")
 
     parser.add_argument("-t",
                         dest="timeout",
@@ -93,12 +95,12 @@ def setup_args():
     args = parser.parse_args()
 
 
-def clean_env() :
+def clean_env():
     if compose_env_file.exists():
         compose_env_file.unlink()
 
 
-def export() :
+def export():
     print("Keeping mongo alive")
     clean_env()
     mongo_scale = import_scales(mongo_env)
@@ -129,7 +131,7 @@ def import_scales(env_file):
         if query_yes_no():
             print("👌")
         else:
-            compose_env_file.unlink()  # Clean up
+            clean_env()
             exit(0)
     else:
         print("Scales found in env:")
@@ -139,7 +141,7 @@ def import_scales(env_file):
     return scales
 
 
-def main() :
+def main():
     setup_args()
 
     # Clean slate
@@ -168,6 +170,9 @@ def main() :
         export()
     else:
         stop_docker_compose()
+
+    # No such thing as too much cleaning!
+    clean_env()
 
 
 if __name__ == "__main__":
