@@ -2,8 +2,7 @@
 import subprocess
 import argparse
 from enum import Enum, unique
-from time import sleep
-
+import requests
 from User import User
 from BingePersona import BingePersona
 from IncognitoPersona import IncognitoPersona
@@ -85,7 +84,7 @@ else:
     options = args.persona_options
 
     #Log persona type to database
-    r = requests.get('metric/metrics/persona/' + personaType.name)
+    r = requests.get('http://metric:8081/metrics/persona/' + personaType.name)
 
     user = User(args.browserHead)
 

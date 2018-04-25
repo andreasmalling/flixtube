@@ -1,1 +1,2 @@
-splinter
+requests==2.9.1
+splinter==0.7.7

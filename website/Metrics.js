@@ -66,7 +66,7 @@ function updateMetrics(id, player, streamInfo) {
             streamList.push({
                 ip: id,
                 mpd: player.getSource().match(mpdPattern)[0],
-                seg: url.match(segmentPattern)[1],
+                seg: parseInt(url.match(segmentPattern)[1]),
                 timestamp: timestamp,
                 type: type,
                 responsecode: responseCode,
