@@ -30,17 +30,24 @@ db = client["flixtube_db"]
 def main():
     users = [persona for persona in db[PERSONA].find()]
 
-    plot_user_data_seg("latency", users, AUDIO)
-    plot_user_data_seg("download", users, AUDIO)
-    plot_user_data_seg("latency", users, VIDEO)
-    plot_user_data_seg("download", users, VIDEO)
+    # plot_user_data_seg("latency", users, AUDIO)
+    # plot_user_data_seg("download", users, AUDIO)
+    # plot_user_data_seg("latency", users, VIDEO)
+    # plot_user_data_seg("download", users, VIDEO)
+
+    plot_user_data_time("latency", users, AUDIO)
+    plot_user_data_time("download", users, AUDIO)
+    plot_user_data_time("latency", users, VIDEO)
+    plot_user_data_time("download", users, VIDEO)
+
     # plot_network_data_time("rx_bytes", users)
     # plot_network_data_time("tx_bytes", users)
     # plot_network_data_time("rx_packets", users)
     # plot_network_data_time("tx_packets", users)
+
     # plot_network_data_hist("rx_bytes", "tx_bytes", users)
     # plot_network_data_hist("rx_packets", "tx_packets", users)
-# TODO add export to .csv
+    # TODO add export to .csv
 
     # close mongo client
     client.close()
@@ -64,14 +71,28 @@ def plot_user_data_seg(yname, users, collection):
     plt.plot(segments, stdev, color="blue", label="stdev")
 
     plt.legend()
-    plt.title(collection + " " + yname)
+    plt.title(collection + " " + yname + " per segments")
 
     plt.show()
 
 
 def plot_user_data_time(yname, users, collection):
-    pass
-    # TODO
+    for user in users:
+        cursor = db[collection].find({"ip": user["ip"]}).sort("timestamp", pymongo.ASCENDING)
+        xs = []
+        ys = []
+        sum = 0
+        for elem in cursor:
+            xs += [elem["timestamp"]]
+            sum += elem[yname]
+            ys += [sum]
+        print("BOBO")
+        print(xs)
+        print(ys)
+        plt.plot(xs, ys)
+    plt.title(collection + " " + yname + " over time")
+    plt.show()
+
 
 
 def plot_network_data_time(yname, users):
