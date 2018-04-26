@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+import datetime
 import sys
 from subprocess import PIPE, Popen, TimeoutExpired
 from pathlib import Path
@@ -19,12 +20,12 @@ def run_docker_compose(scales, run_users=True):
     if not run_users:
         scales = dict((key, value) for key, value in scales.items() if not key.startswith("SCALE_USER"))
 
-    main_scale = [ "--scale", "bootstrap="  + scales.get("SCALE_BOOT", "1"),
-                   "--scale", "host="       + scales.get("SCALE_HOST", "1"),
-                   "--scale", "mongo="      + scales.get("SCALE_MONGO", "1"),
-                   "--scale", "metric="     + scales.get("SCALE_METRIC", "1"),
-                   "--scale", "network="    + scales.get("SCALE_NETWORK", "1"),
-                   "--scale", "user_seed="  + scales.get("SCALE_SEED", "1"),
+    main_scale = [ "--scale", "bootstrap="  + scales.get("SCALE_BOOT", "0"),
+                   "--scale", "host="       + scales.get("SCALE_HOST", "0"),
+                   "--scale", "mongo="      + scales.get("SCALE_MONGO", "0"),
+                   "--scale", "metric="     + scales.get("SCALE_METRIC", "0"),
+                   "--scale", "network="    + scales.get("SCALE_NETWORK", "0"),
+                   "--scale", "user_seed="  + scales.get("SCALE_SEED", "0"),
                    "--scale", "user_debug=" + scales.get("SCALE_DEBUG", "0")]
 
     user_scale = [ "--scale", "user_1="     + scales.get("SCALE_USER_1", "0"),
@@ -50,7 +51,7 @@ def set_timeout(proc, timeout, func=None):
 def query_yes_no():
     yes = {'yes', 'y'}
     no = {'no', 'n', ''}
-    sys.stdout.write("Continue? [y/N]")
+    sys.stdout.write('\033[1m' + 'Please input [y/N]' + '\033[0m')
     choice = input().lower()
     if choice in yes:
         return True
@@ -89,8 +90,14 @@ def setup_args():
     parser.add_argument("-e",
                         dest="export",
                         action="store_true",
-                        default="false",
+                        default=False,
                         help="export results")
+
+    parser.add_argument("--no-plot",
+                        dest="plot",
+                        action="store_false",
+                        default=True,
+                        help="don't plot the results")
 
     args = parser.parse_args()
 
@@ -100,13 +107,37 @@ def clean_env():
         compose_env_file.unlink()
 
 
-def export():
-    print("Keeping mongo alive")
-    clean_env()
-    mongo_scale = import_scales(mongo_env)
-    proc = run_docker_compose(mongo_scale, False)
-    # TODO: Add export from mongo + plotting?
+def docker_exec(container, command ):
+    return Popen(["docker-compose", "exec"] + [container] + command )
 
+
+def export( filename=datetime.datetime.now().isoformat('_') ):
+    print("Export mongo DB.")
+    mongo_scale = import_scales(mongo_env)
+    run_docker_compose(mongo_scale, False)
+
+    proc = docker_exec( "mongo",
+                       [ "mongodump",
+                         "--db", "flixtube_db",
+                         "--gzip",
+                         "--archive=" + "/data/dump/" + filename + ".gz"])
+    proc.wait()
+
+    print("Export done. Delete database.")
+    proc = docker_exec("mongo",
+                       [ "mongo",
+                         "flixtube_db",
+                         "--eval", "db.dropDatabase()"])
+    proc.wait()
+
+
+def clean_exit():
+    # Stop exp
+    stop_docker_compose()
+
+    # No such thing as too much cleaning!
+    clean_env()
+    exit(0)
 
 def import_scales(env_file):
     scales = {}
@@ -127,18 +158,22 @@ def import_scales(env_file):
 
     # Fail safe of if no scales found
     if scales == {}:
-        print("No scales found in env")
+        print("No scales found in env. Continue?")
         if query_yes_no():
             print("👌")
         else:
-            clean_env()
-            exit(0)
+            clean_exit()
     else:
         print("Scales found in env:")
         for scale in scales:
             print(scale, ":\t", scales.get(scale))
 
     return scales
+
+
+def plot():
+    proc = Popen(["docker-compose", "--file", "plot-compose.yml", "run", "plot"], stdout=PIPE)
+    proc.wait()
 
 
 def main():
@@ -165,14 +200,15 @@ def main():
     if args.timeout > 0:
         set_timeout(proc, args.timeout )
 
-    # Export results
-    if args.export:
-        export()
-    else:
-        stop_docker_compose()
+        # Plot results
+        if args.plot:
+            plot()
 
-    # No such thing as too much cleaning!
-    clean_env()
+        # Export results
+        if args.export:
+            export()
+
+    clean_exit()
 
 
 if __name__ == "__main__":
