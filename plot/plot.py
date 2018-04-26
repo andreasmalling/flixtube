@@ -10,11 +10,8 @@ AUDIO = "audio"
 WAIT = "wait"
 PERSONA = "persona"
 NETWORK = "network"
+PATH = "./output/"
 
-RXBYTES = "rx_bytes"
-TXBYTES = "tx_bytes"
-RXPACKETS = "rx_packets"
-TXPACKETS = "tx_packets"
 
 # init mongo client
 client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
@@ -33,22 +30,23 @@ db = client["flixtube_db"]
 def main():
     users = [persona for persona in db[PERSONA].find()]
 
-    # plot_user_data("latency", users, AUDIO)
-    # plot_user_data("download", users, AUDIO)
-    # plot_user_data("latency", users, VIDEO)
-    # plot_user_data("download", users, VIDEO)
-    plot_network_data(users, TXPACKETS)
-    plot_network_data(users, RXPACKETS)
-    plot_network_data(users, TXBYTES)
-    plot_network_data(users, RXBYTES)
-
-    # plotFromCollection("video", "seg", "latency")
+    plot_user_data_seg("latency", users, AUDIO)
+    plot_user_data_seg("download", users, AUDIO)
+    plot_user_data_seg("latency", users, VIDEO)
+    plot_user_data_seg("download", users, VIDEO)
+    # plot_network_data_time("rx_bytes", users)
+    # plot_network_data_time("tx_bytes", users)
+    # plot_network_data_time("rx_packets", users)
+    # plot_network_data_time("tx_packets", users)
+    # plot_network_data_hist("rx_bytes", "tx_bytes", users)
+    # plot_network_data_hist("rx_packets", "tx_packets", users)
+# TODO add export to .csv
 
     # close mongo client
     client.close()
 
 
-def plot_user_data(yname , users, collection):
+def plot_user_data_seg(yname, users, collection):
     last_seg = db[AUDIO].find_one(sort=[("seg", pymongo.DESCENDING)])["seg"]
     segments = [x for x in range(last_seg+1)]
     for user in users:
@@ -56,21 +54,27 @@ def plot_user_data(yname , users, collection):
         for res in db[collection].find({"ip": user["ip"]}).sort("seg", pymongo.ASCENDING):
             if res["seg"] < len(user[yname]):
                 user[yname][res["seg"]] = res[yname]
-        plt.plot(segments, user[yname], label=user["type"], color="green")
+        plt.plot(segments, user[yname], color="green")
     #mean
     means = [statistics.mean([user[yname][i] for user in users]) for i in range(last_seg+1)]
-    plt.plot(segments, means, color="red")
+    plt.plot(segments, means, color="red", label="mean")
 
     #stdev
     stdev = [statistics.stdev([user[yname][i] for user in users]) for i in range(last_seg+1)]
-    plt.plot(segments, stdev, color="blue")
+    plt.plot(segments, stdev, color="blue", label="stdev")
 
+    plt.legend()
     plt.title(collection + " " + yname)
 
     plt.show()
 
 
-def plot_network_data(users, yname):
+def plot_user_data_time(yname, users, collection):
+    pass
+    # TODO
+
+
+def plot_network_data_time(yname, users):
     for user in users:
         xs = []
         ys = []
@@ -79,6 +83,21 @@ def plot_network_data(users, yname):
             ys += [res["net"][yname]]
         plt.plot(xs, ys)
     plt.title("network " + yname)
+    plt.show()
+
+
+def plot_network_data_hist(yname1, yname2, users):
+    xs = [str(i) + ": " + users[i]["type"] for i in range(len(users))]
+    ys1 = []
+    ys2 = []
+    for user in users:
+        res = db[NETWORK].find_one({"ip": user["ip"]}, sort=[("ts", pymongo.DESCENDING)])
+        ys1 += [res["net"][yname1]]
+        ys2 += [res["net"][yname2]]
+    plt.bar(xs, ys1, color="blue", width=-0.4, align="edge", label=yname1)
+    plt.bar(xs, ys2, color="red", width=0.4, align="edge", label=yname2)
+    plt.legend()
+    plt.title("network histogram " + yname1 + " & " + yname2)
     plt.show()
 
 
