@@ -31,6 +31,10 @@ db = client["flixtube_db"]
 def main():
     users = [persona for persona in db[PERSONA].find()]
 
+    #give users identifying number
+    for i in range(len(users)):
+        users[i]["num"] = i
+
     plot_user_data_seg("latency", users, AUDIO)
     plot_user_data_seg("download", users, AUDIO)
     plot_user_data_seg("latency", users, VIDEO)
@@ -72,12 +76,12 @@ def plot_user_data_seg(yname, users, collection):
     stdev = [statistics.stdev([user[yname][i] for user in users]) for i in range(last_seg+1)]
     plt.plot(segments, stdev, color="blue", label="stdev")
 
-    plt.legend()
     plt.title(collection + " " + yname + " per segments")
+    plt.legend()
     plt.xlabel("segment number")
     plt.ylabel(yname)
 
-    plt.savefig(PATH + collection + "_" + yname + "_seg.png")
+    plt.savefig(PATH + collection + "_" + yname + "_seg.png", bbox_inches='tight')
     plt.show()
 
 
@@ -86,18 +90,18 @@ def plot_user_data_time(yname, users, collection):
         cursor = db[collection].find({"ip": user["ip"]}).sort("timestamp", pymongo.ASCENDING)
         xs = []
         ys = []
-        sum = 0
+        cum = 0
         for elem in cursor:
             xs += [elem["timestamp"]]
-            sum += elem[yname]
-            ys += [sum]
-        plt.plot(xs, ys)
+            cum += elem[yname]
+            ys += [cum]
+        plt.plot(xs, ys, label=user_name(user))
     plt.title(collection + " " + yname + " over time")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xlabel("time")
     plt.ylabel(yname)
-    plt.savefig(PATH + collection + "_" + yname + "_time.png")
+    plt.savefig(PATH + collection + "_" + yname + "_time.png", bbox_inches='tight')
     plt.show()
-
 
 
 def plot_network_data_time(yname, users):
@@ -107,16 +111,17 @@ def plot_network_data_time(yname, users):
         for res in db[NETWORK].find({"ip": user["ip"]}).sort("ts", pymongo.ASCENDING):
             xs += [int(time.mktime(dateutil.parser.parse(res["ts"]).timetuple()))]
             ys += [res["net"][yname]]
-        plt.plot(xs, ys)
+        plt.plot(xs, ys, label=user_name(user))
     plt.title("network " + yname)
-    plt.savefig(PATH + "network_" + yname + "_time.png")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xlabel("time")
     plt.ylabel(yname[3:])
+    plt.savefig(PATH + "network_" + yname + "_time.png", bbox_inches='tight')
     plt.show()
 
 
 def plot_network_data_hist(yname1, yname2, users):
-    xs = [str(i) + ": " + users[i]["type"] for i in range(len(users))]
+    xs = [user_name(user) for user in users]
     ys1 = []
     ys2 = []
     for user in users:
@@ -125,13 +130,17 @@ def plot_network_data_hist(yname1, yname2, users):
         ys2 += [res["net"][yname2]]
     plt.bar(xs, ys1, color="blue", width=-0.4, align="edge", label=yname1)
     plt.bar(xs, ys2, color="red", width=0.4, align="edge", label=yname2)
-    plt.legend()
     plt.title("network histogram " + yname1 + " & " + yname2)
+    plt.legend()
     plt.xlabel("users")
     plt.ylabel(yname1[3:])
-    plt.savefig(PATH + "network_" + yname1 + "_" + yname2 + "_hist.png")
+    plt.savefig(PATH + "network_" + yname1 + "_" + yname2 + "_hist.png", bbox_inches='tight')
 
     plt.show()
+
+
+def user_name(user):
+    return str(user["num"]) + ": " + user["type"]
 
 
 if __name__ == "__main__":
