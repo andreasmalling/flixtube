@@ -184,7 +184,9 @@ def export( filename=datetime.datetime.now().isoformat('_') ):
 def clean_exit():
     # No such thing as too much cleaning!
     clean_env()
-    clean_db()
+
+    if args.clean:
+        clean_db()
 
     # Stop exp
     stop_docker_compose()
@@ -226,9 +228,9 @@ def import_scales(env_file):
 def plot():
     print("# === Plotting === #")
     proc = Popen(["docker-compose", "--file", "plot-compose.yml", "run", "plot"], stdout=PIPE)
-    proc.communicate()
+    outs, errs = proc.communicate()
     proc.wait()
-
+    print("Plot outs:\n", outs)
 
 if __name__ == "__main__":
     main()
