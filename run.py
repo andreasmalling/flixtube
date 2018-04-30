@@ -27,8 +27,11 @@ def main():
 
         scales = {**scales, **(import_scales(args.env_stable_file))}    # Merge dicts
         proc = run_docker_compose(scales, run_users=False)
-        proc.wait( args.setup_time )
-
+        try:
+            proc.wait( args.setup_time )
+        except TimeoutExpired:
+            print("Timed out")
+    
     # Run exp
     print("# == SETUP OF EXP. NETWORK == #")
     scales = {**scales, **(import_scales(args.env_exp_file))}    # Merge dicts
@@ -36,7 +39,11 @@ def main():
 
     # Possible timeout of exp
     if args.timeout > 0:
-        proc.wait( args.timeout )
+        try:
+            proc.wait( args.timeout )
+        except TimeoutExpired:
+            print("Timed out")
+
         stop_docker_compose()
 
         # Plot results
@@ -56,8 +63,8 @@ def stop_docker_compose():
 
 
 def clean_db():
-    run_mongo()
     print("Deleting database.")
+    run_mongo()
     proc = docker_exec("mongo",
                        [ "mongo",
                          "flixtube_db",
@@ -217,9 +224,10 @@ def import_scales(env_file):
 
 
 def plot():
+    print("# === Plotting === #")
     proc = Popen(["docker-compose", "--file", "plot-compose.yml", "run", "plot"], stdout=PIPE)
     proc.wait()
 
 
 if __name__ == "__main__":
-    plot() #main()
+    main()
