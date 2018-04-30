@@ -11,9 +11,71 @@ mongo_env = Path.cwd() / "envs" / "mongo.env"
 compose_env_file = Path.cwd() / ".env"
 
 
+def main():
+    setup_args()
+
+    # Clean slate
+    if args.clean:
+        clean_db()
+    stop_docker_compose()
+
+    scales = {}
+
+    # Possible setup of stable network
+    if args.env_stable_file is not None:
+        print("# == SETUP OF STABLE NETWORK == #")
+
+        scales = {**scales, **(import_scales(args.env_stable_file))}    # Merge dicts
+        proc = run_docker_compose(scales, run_users=False)
+        proc.wait( args.setup_time )
+
+    # Run exp
+    print("# == SETUP OF EXP. NETWORK == #")
+    scales = {**scales, **(import_scales(args.env_exp_file))}    # Merge dicts
+    proc = run_docker_compose(scales, run_users=True)
+
+    # Possible timeout of exp
+    if args.timeout > 0:
+        proc.wait( args.timeout )
+        stop_docker_compose()
+
+        # Plot results
+        if args.plot:
+            plot()
+
+        # Export results
+        if args.export:
+            export()
+
+    clean_exit()
+
+
 def stop_docker_compose():
     stop = Popen(["docker-compose", "down"])
     stop.wait()
+
+
+def clean_db():
+    run_mongo()
+    print("Deleting database.")
+    proc = docker_exec("mongo",
+                       [ "mongo",
+                         "flixtube_db",
+                         "--eval", "db.dropDatabase()"])
+    proc.wait()
+
+
+def query_yes_no():
+    yes = {'yes', 'y'}
+    no = {'no', 'n', ''}
+    sys.stdout.write('\033[1m' + 'Please input [y/N]' + '\033[0m')
+    choice = input().lower()
+    if choice in yes:
+        return True
+    elif choice in no:
+        return False
+    else:
+        sys.stdout.write("Please respond with 'yes' or 'no'")
 
 
 def run_docker_compose(scales, run_users=True):
@@ -36,29 +98,6 @@ def run_docker_compose(scales, run_users=True):
                    "--scale", "user_6="     + scales.get("SCALE_USER_6", "0")]
 
     return Popen(["docker-compose", "up"] + main_scale + user_scale, stdout=PIPE)
-
-
-def set_timeout(proc, timeout, func=None):
-    try:
-        outs, errs = proc.communicate(timeout=timeout)
-    except TimeoutExpired:
-        if func is None:
-            print("Timed out after", timeout, "seconds.")
-        else:
-            func()
-
-
-def query_yes_no():
-    yes = {'yes', 'y'}
-    no = {'no', 'n', ''}
-    sys.stdout.write('\033[1m' + 'Please input [y/N]' + '\033[0m')
-    choice = input().lower()
-    if choice in yes:
-        return True
-    elif choice in no:
-        return False
-    else:
-        sys.stdout.write("Please respond with 'yes' or 'no'")
 
 
 def setup_args():
@@ -93,6 +132,12 @@ def setup_args():
                         default=False,
                         help="export results")
 
+    parser.add_argument("-c",
+                        dest="clean",
+                        action="store_true",
+                        default=False,
+                        help="clean db before run")
+
     parser.add_argument("--no-plot",
                         dest="plot",
                         action="store_false",
@@ -111,10 +156,14 @@ def docker_exec(container, command ):
     return Popen(["docker-compose", "exec"] + [container] + command )
 
 
+def run_mongo():
+    mongo_scale = import_scales(mongo_env)
+    return run_docker_compose(mongo_scale, False)
+
+
 def export( filename=datetime.datetime.now().isoformat('_') ):
     print("Export mongo DB.")
-    mongo_scale = import_scales(mongo_env)
-    run_docker_compose(mongo_scale, False)
+    run_mongo()
 
     proc = docker_exec( "mongo",
                        [ "mongodump",
@@ -123,20 +172,16 @@ def export( filename=datetime.datetime.now().isoformat('_') ):
                          "--archive=" + "/data/dump/" + filename + ".gz"])
     proc.wait()
 
-    print("Export done. Delete database.")
-    proc = docker_exec("mongo",
-                       [ "mongo",
-                         "flixtube_db",
-                         "--eval", "db.dropDatabase()"])
-    proc.wait()
-
+    print("Export done.")
 
 def clean_exit():
+    # No such thing as too much cleaning!
+    clean_env()
+    clean_db()
+
     # Stop exp
     stop_docker_compose()
 
-    # No such thing as too much cleaning!
-    clean_env()
     exit(0)
 
 def import_scales(env_file):
@@ -176,40 +221,5 @@ def plot():
     proc.wait()
 
 
-def main():
-    setup_args()
-
-    # Clean slate
-    stop_docker_compose()
-
-    # Possible setup of stable network
-    if args.env_stable_file is not None:
-        print("# == SETUP OF STABLE NETWORK == #")
-
-        main_scales = import_scales(args.env_stable_file)
-        proc = run_docker_compose(main_scales, run_users=False)
-
-        set_timeout(proc, args.setup_time )
-
-    # Run exp
-    print("# == SETUP OF EXP. NETWORK == #")
-    exp_scales = import_scales(args.env_exp_file)
-    proc = run_docker_compose(exp_scales, run_users=True)
-
-    # Possible timeout of exp
-    if args.timeout > 0:
-        set_timeout(proc, args.timeout )
-
-        # Plot results
-        if args.plot:
-            plot()
-
-        # Export results
-        if args.export:
-            export()
-
-    clean_exit()
-
-
 if __name__ == "__main__":
-    main()
+    plot() #main()
