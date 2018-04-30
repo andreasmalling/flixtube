@@ -226,6 +226,7 @@ def import_scales(env_file):
 def plot():
     print("# === Plotting === #")
     proc = Popen(["docker-compose", "--file", "plot-compose.yml", "run", "plot"], stdout=PIPE)
+    proc.communicate()
     proc.wait()
 
 
