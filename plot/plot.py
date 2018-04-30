@@ -20,27 +20,32 @@ db = client["flixtube_db"]
 
 
 def main():
+    print("ready")
     users = [persona for persona in db[PERSONA].find()]
 
     # give users identifying number
     for i in range(len(users)):
         users[i]["num"] = i
 
+    print("plotting user data for segments")
     plot_user_data_seg("latency", users, AUDIO)
     plot_user_data_seg("download", users, AUDIO)
     plot_user_data_seg("latency", users, VIDEO)
     plot_user_data_seg("download", users, VIDEO)
 
+    print("plotting user data over time")
     plot_user_data_time("latency", users, AUDIO)
     plot_user_data_time("download", users, AUDIO)
     plot_user_data_time("latency", users, VIDEO)
     plot_user_data_time("download", users, VIDEO)
 
+    print("plotting network data over time")
     plot_network_data_time("rx_bytes", users)
     plot_network_data_time("tx_bytes", users)
     plot_network_data_time("rx_packets", users)
     plot_network_data_time("tx_packets", users)
 
+    print("plotting network histogram")
     plot_network_data_hist("rx_bytes", "tx_bytes", users)
     plot_network_data_hist("rx_packets", "tx_packets", users)
 
@@ -63,10 +68,12 @@ def plot_user_data_seg(yname, users, collection):
     #mean
     means = [statistics.mean([user[yname][i] for user in users]) for i in range(last_seg+1)]
     plt.plot(segments, means, color="red", label="mean")
+    csv.add_plot("means", means)
 
     #stdev
     stdev = [statistics.stdev([user[yname][i] for user in users]) for i in range(last_seg+1)]
     plt.plot(segments, stdev, color="blue", label="stdev")
+    csv.add_plot("stdev", stdev)
 
     plt.title(collection + " " + yname + " per segments")
     plt.legend()
@@ -164,8 +171,6 @@ class CSVBuilder:
         if len(data) > self.longest_list:
             self.longest_list = len(data)
 
-        print("added: " + name + " with data:\n" + str(data) + "\n")
-
     def export(self, filename):
         with open(filename, "w") as file:
 
@@ -177,9 +182,7 @@ class CSVBuilder:
 
             # write data
             for i in range(self.longest_list):
-                print("line " + str(i))
                 for data_list in self.data_lists:
-                    print("len: " + str(len(data_list)))
                     if i < len(data_list):
                         file.write(str(data_list[i]) + " ")
                     else:
@@ -191,3 +194,4 @@ class CSVBuilder:
 
 if __name__ == "__main__":
     main()
+    print("job complete")
