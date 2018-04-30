@@ -83,7 +83,7 @@ def plot_user_data_seg(yname, users, collection):
     path = PATH + collection + "_" + yname + "_seg"
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
-    plt.show()
+    plt.gcf().clear()
 
 
 def plot_user_data_time(yname, users, collection):
@@ -107,7 +107,7 @@ def plot_user_data_time(yname, users, collection):
     path = PATH + collection + "_" + yname + "_time"
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
-    plt.show()
+    plt.gcf().clear()
 
 
 def plot_network_data_time(yname, users):
@@ -128,7 +128,7 @@ def plot_network_data_time(yname, users):
     path = PATH + "network_" + yname + "_time"
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
-    plt.show()
+    plt.gcf().clear()
 
 
 def plot_network_data_hist(yname1, yname2, users):
@@ -152,7 +152,7 @@ def plot_network_data_hist(yname1, yname2, users):
     path = PATH + "network_" + yname1 + "_" + yname2 + "_hist"
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
-    plt.show()
+    plt.gcf().clear()
 
 
 def user_name(user):
