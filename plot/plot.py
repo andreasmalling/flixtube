@@ -3,7 +3,6 @@ import pymongo
 import statistics
 import dateutil
 import time
-from pathlib import Path
 
 # collections
 VIDEO = "video"
@@ -15,23 +14,15 @@ PATH = "output/"
 
 
 # init mongo client
-client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
-# client = pymongo.MongoClient("mongo", 27017)
+# client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
+client = pymongo.MongoClient("mongo", 27017)
 db = client["flixtube_db"]
-
-# export csv:
-#
-# with open("plot.csv", "w") as file:
-#     file.write(x + " " + y + "\n")
-#     for i in range(0, len(xlist)):
-#         file.write(str(xlist[i]) + " " + str(ylist[i]) + "\n")
-#     file.close()
 
 
 def main():
     users = [persona for persona in db[PERSONA].find()]
 
-    #give users identifying number
+    # give users identifying number
     for i in range(len(users)):
         users[i]["num"] = i
 
@@ -53,21 +44,22 @@ def main():
     plot_network_data_hist("rx_bytes", "tx_bytes", users)
     plot_network_data_hist("rx_packets", "tx_packets", users)
 
-    # TODO add export to .csv
-
     # close mongo client
     client.close()
 
 
 def plot_user_data_seg(yname, users, collection):
+    csv = CSVBuilder()
     last_seg = db[AUDIO].find_one(sort=[("seg", pymongo.DESCENDING)])["seg"]
     segments = [x for x in range(last_seg+1)]
+    csv.add_plot("segments", segments)
     for user in users:
         user[yname] = [0 for i in range(last_seg+1)] #maybe change 0 to something else?????????
         for res in db[collection].find({"ip": user["ip"]}).sort("seg", pymongo.ASCENDING):
             if res["seg"] < len(user[yname]):
                 user[yname][res["seg"]] = res[yname]
         plt.plot(segments, user[yname], color="green")
+        csv.add_plot(str(user["num"]), user[yname])
     #mean
     means = [statistics.mean([user[yname][i] for user in users]) for i in range(last_seg+1)]
     plt.plot(segments, means, color="red", label="mean")
@@ -81,11 +73,14 @@ def plot_user_data_seg(yname, users, collection):
     plt.xlabel("segment number")
     plt.ylabel(yname)
 
-    plt.savefig(PATH + collection + "_" + yname + "_seg.png", bbox_inches='tight')
+    path = PATH + collection + "_" + yname + "_seg"
+    csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
     plt.show()
 
 
 def plot_user_data_time(yname, users, collection):
+    csv = CSVBuilder()
     for user in users:
         cursor = db[collection].find({"ip": user["ip"]}).sort("timestamp", pymongo.ASCENDING)
         xs = []
@@ -96,15 +91,20 @@ def plot_user_data_time(yname, users, collection):
             cum += elem[yname]
             ys += [cum]
         plt.plot(xs, ys, label=user_name(user))
+        csv.add_plot("x" + str(user["num"]), xs)
+        csv.add_plot("y" + str(user["num"]), ys)
     plt.title(collection + " " + yname + " over time")
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xlabel("time")
     plt.ylabel(yname)
-    plt.savefig(PATH + collection + "_" + yname + "_time.png", bbox_inches='tight')
+    path = PATH + collection + "_" + yname + "_time"
+    csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
     plt.show()
 
 
 def plot_network_data_time(yname, users):
+    csv = CSVBuilder()
     for user in users:
         xs = []
         ys = []
@@ -112,35 +112,81 @@ def plot_network_data_time(yname, users):
             xs += [int(time.mktime(dateutil.parser.parse(res["ts"]).timetuple()))]
             ys += [res["net"][yname]]
         plt.plot(xs, ys, label=user_name(user))
+        csv.add_plot("x" + str(user["num"]), xs)
+        csv.add_plot("y" + str(user["num"]), ys)
     plt.title("network " + yname)
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xlabel("time")
     plt.ylabel(yname[3:])
-    plt.savefig(PATH + "network_" + yname + "_time.png", bbox_inches='tight')
+    path = PATH + "network_" + yname + "_time"
+    csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
     plt.show()
 
 
 def plot_network_data_hist(yname1, yname2, users):
+    csv = CSVBuilder()
     xs = [user_name(user) for user in users]
     ys1 = []
     ys2 = []
+    csv.add_plot("users", xs)
     for user in users:
         res = db[NETWORK].find_one({"ip": user["ip"]}, sort=[("ts", pymongo.DESCENDING)])
         ys1 += [res["net"][yname1]]
         ys2 += [res["net"][yname2]]
+    csv.add_plot("rx", ys1)
+    csv.add_plot("tx", ys2)
     plt.bar(xs, ys1, color="blue", width=-0.4, align="edge", label=yname1)
     plt.bar(xs, ys2, color="red", width=0.4, align="edge", label=yname2)
     plt.title("network histogram " + yname1 + " & " + yname2)
     plt.legend()
     plt.xlabel("users")
     plt.ylabel(yname1[3:])
-    plt.savefig(PATH + "network_" + yname1 + "_" + yname2 + "_hist.png", bbox_inches='tight')
-
+    path = PATH + "network_" + yname1 + "_" + yname2 + "_hist"
+    csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
     plt.show()
 
 
 def user_name(user):
-    return str(user["num"]) + ": " + user["type"]
+    return str(user["num"]) + ":" + user["type"]
+
+
+class CSVBuilder:
+    def __init__(self):
+        self.names = []
+        self.data_lists = []
+        self.longest_list = 0
+
+    def add_plot(self, name, data):
+        self.names += [name]
+        self.data_lists += [data]
+        if len(data) > self.longest_list:
+            self.longest_list = len(data)
+
+        print("added: " + name + " with data:\n" + str(data) + "\n")
+
+    def export(self, filename):
+        with open(filename, "w") as file:
+
+            # write axis names
+            for name in self.names:
+                file.write(name + " ")
+            else:
+                file.write("\n")
+
+            # write data
+            for i in range(self.longest_list):
+                print("line " + str(i))
+                for data_list in self.data_lists:
+                    print("len: " + str(len(data_list)))
+                    if i < len(data_list):
+                        file.write(str(data_list[i]) + " ")
+                    else:
+                        file.write("NaN ")
+                else:
+                    file.write("\n")
+            file.close()
 
 
 if __name__ == "__main__":
