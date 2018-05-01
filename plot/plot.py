@@ -19,7 +19,7 @@ NETWORK = "network"
 
 
 # init mongo client
-#client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
+# client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
 client = pymongo.MongoClient("mongo", 27017)
 db = client["flixtube_db"]
 
@@ -30,22 +30,21 @@ def main():
     PATH = "output/" + datetime.datetime.now().isoformat('_') + "/"
     os.mkdir(PATH)
     users = [persona for persona in db[PERSONA].find()]
-
+    users_no_idle = list(filter(lambda x: x["type"] != "IDLE", users))
     # give users identifying number
     for i in range(len(users)):
         users[i]["num"] = i
-
     print("plotting user data for segments")
-    plot_user_data_seg("latency", users, AUDIO)
-    plot_user_data_seg("download", users, AUDIO)
-    plot_user_data_seg("latency", users, VIDEO)
-    plot_user_data_seg("download", users, VIDEO)
+    plot_user_data_seg("latency", users_no_idle, AUDIO)
+    plot_user_data_seg("download", users_no_idle, AUDIO)
+    plot_user_data_seg("latency", users_no_idle, VIDEO)
+    plot_user_data_seg("download", users_no_idle, VIDEO)
 
     print("plotting user data over time")
-    plot_user_data_time("latency", users, AUDIO)
-    plot_user_data_time("download", users, AUDIO)
-    plot_user_data_time("latency", users, VIDEO)
-    plot_user_data_time("download", users, VIDEO)
+    plot_user_data_time("latency", users_no_idle, AUDIO)
+    plot_user_data_time("download", users_no_idle, AUDIO)
+    plot_user_data_time("latency", users_no_idle, VIDEO)
+    plot_user_data_time("download", users_no_idle, VIDEO)
 
     print("plotting network data over time")
     plot_network_data_time("rx_bytes", users)
