@@ -24,7 +24,7 @@ services:
     <<: *user-template
     privileged: true
     environment:
-      - DISPLAY=$DISPLAY
+      - DISPLAY=${DISPLAY:- 0}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /dev/snd:/dev/snd
@@ -37,27 +37,27 @@ services:
   
   user_1:
     <<: *user-template
-    command: ${USER_1}
+    command: ${USER_1:- IDLE}
 
   user_2:
     <<: *user-template
-    command: ${USER_2}
+    command: ${USER_2:- IDLE}
 
   user_3:
     <<: *user-template
-    command: ${USER_3}
+    command: ${USER_3:- IDLE}
 
   user_4:
     <<: *user-template
-    command: ${USER_4}
+    command: ${USER_4:- IDLE}
 
   user_5:
     <<: *user-template
-    command: ${USER_5}
+    command: ${USER_5:- IDLE}
 
   user_6:
     <<: *user-template
-    command: ${USER_6}
+    command: ${USER_6:- IDLE}
 
   # ===================== #
   #     Main network      #
