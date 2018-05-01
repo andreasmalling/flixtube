@@ -23,7 +23,7 @@ def main():
 
     # Possible setup of stable network
     if args.env_stable_file is not None:
-        print("# == SETUP OF STABLE NETWORK == #")
+        print_title("SETUP OF STABLE NETWORK")
 
         scales = {**scales, **(import_scales(args.env_stable_file))}    # Merge dicts
         proc = run_docker_compose(scales, run_users=False)
@@ -33,7 +33,7 @@ def main():
             print("Timed out")
     
     # Run exp
-    print("# == SETUP OF EXP. NETWORK == #")
+    print_title("SETUP OF EXP. NETWORK")
     scales = {**scales, **(import_scales(args.env_exp_file))}    # Merge dicts
     proc = run_docker_compose(scales, run_users=True)
 
@@ -63,7 +63,7 @@ def stop_docker_compose():
 
 
 def clean_db():
-    print("Deleting database.")
+    print_title("DELETE FLiXTUBE DB")
     run_mongo()
     proc = docker_exec("mongo",
                        [ "mongo",
@@ -169,7 +169,7 @@ def run_mongo():
 
 
 def export( filename=datetime.datetime.now().isoformat('_') ):
-    print("Export mongo DB.")
+    print_title("Export FLiXTUBE DB")
     run_mongo()
 
     proc = docker_exec( "mongo",
@@ -226,11 +226,12 @@ def import_scales(env_file):
 
 
 def plot():
-    print("# === Plotting === #")
+    print_title("GENERATE PLOTS")
     proc = Popen(["docker-compose", "--file", "plot-compose.yml", "run", "plot"], stdout=PIPE)
-    outs, errs = proc.communicate()
     proc.wait()
-    print("Plot outs:\n", outs)
+
+def print_title(title):
+    print('\033[95m# == ' + title + ' == #\033[0m')
 
 if __name__ == "__main__":
     main()
