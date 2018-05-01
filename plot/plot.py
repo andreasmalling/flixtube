@@ -1,4 +1,7 @@
+import datetime
 import matplotlib
+import os
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pymongo
@@ -12,7 +15,7 @@ AUDIO = "audio"
 WAIT = "wait"
 PERSONA = "persona"
 NETWORK = "network"
-PATH = "output/"
+
 
 
 # init mongo client
@@ -23,6 +26,9 @@ db = client["flixtube_db"]
 
 def main():
     print("ready")
+    global PATH
+    PATH = "output/" + datetime.datetime.now().isoformat('_') + "/"
+    os.mkdir(PATH)
     users = [persona for persona in db[PERSONA].find()]
 
     # give users identifying number
