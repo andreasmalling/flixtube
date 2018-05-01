@@ -19,7 +19,7 @@ NETWORK = "network"
 
 
 # init mongo client
-# client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
+#client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
 client = pymongo.MongoClient("mongo", 27017)
 db = client["flixtube_db"]
 
@@ -156,6 +156,7 @@ def plot_network_data_hist(yname1, yname2, users):
     plt.title("network histogram " + yname1 + " & " + yname2)
     plt.legend()
     plt.xlabel("users")
+    plt.xticks(rotation=45)
     plt.ylabel(yname1[3:])
     path = PATH + "network_" + yname1 + "_" + yname2 + "_hist"
     csv.export(path + ".csv")
