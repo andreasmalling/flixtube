@@ -73,6 +73,7 @@ if args.ipfs:
         ipfs.bootstrap_local()
 
     if args.ipfsSeed:
+        ipfs.gateway_public()
         ipfs.add("/usr/src/app/video_dashed/")
 
     ipfs.run_daemon()

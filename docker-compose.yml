@@ -7,7 +7,6 @@ x-user: &user-template
   build: ./user
   volumes:
     - ./video_dashed/:/usr/src/app/video_dashed/
-  command: "IDLE"
   depends_on:
     - bootstrap
     - metric
@@ -24,11 +23,11 @@ services:
     <<: *user-template
     privileged: true
     environment:
-      - DISPLAY=${DISPLAY:- 0}
+      - DISPLAY=${DISPLAY:- :0}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /dev/snd:/dev/snd
-    command: ${USER_DEBUG:- --head IDLE}
+    command: ${USER_DEBUG:- --head BINGE}
 
   # user which adds content from videos_dashed to local IPFS network
   user_seed:

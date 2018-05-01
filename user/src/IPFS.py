@@ -17,3 +17,10 @@ class Ipfs:
 
     def add(self, path):
         subprocess.run(["ipfs", "add", "-r", "-Q", path])
+
+    def gateway_public(self, public=True):
+        if public:
+            ip = "0.0.0.0"
+        else:
+            ip = "127.0.0.1"
+        subprocess.run(["ipfs", "config", "Addresses.Gateway", "/ip4/" + ip + "/tcp/8080"])

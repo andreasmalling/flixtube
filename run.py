@@ -45,19 +45,24 @@ def main():
             print("Timed out")
 
         stop_docker_compose()
+    else:
+        try:
+            proc.wait()
+        except KeyboardInterrupt:
+            pass
+    # Plot results
+    if args.plot:
+        plot()
 
-        # Plot results
-        if args.plot:
-            plot()
-
-        # Export results
-        if args.export:
-            export()
+    # Export results
+    if args.export:
+        export()
 
     clean_exit()
 
 
 def stop_docker_compose():
+    print_title("STOPPING ALL CONTAINERS")
     stop = Popen(["docker-compose", "down"])
     stop.wait()
 
@@ -70,19 +75,6 @@ def clean_db():
                          "flixtube_db",
                          "--eval", "db.dropDatabase()"])
     proc.wait()
-
-
-def query_yes_no():
-    yes = {'yes', 'y'}
-    no = {'no', 'n', ''}
-    sys.stdout.write('\033[1m' + 'Please input [y/N]' + '\033[0m')
-    choice = input().lower()
-    if choice in yes:
-        return True
-    elif choice in no:
-        return False
-    else:
-        sys.stdout.write("Please respond with 'yes' or 'no'")
 
 
 def run_docker_compose(scales, run_users=True):
@@ -113,19 +105,19 @@ def setup_args():
 
     parser.add_argument(dest="env_exp_file",
                         type=Path,
-                        default=default_env,
-                        help="set env file for experiment (Default: " + str(default_env.relative_to(Path.cwd())) + ")")
+                        help="set env file for experiment")
 
     parser.add_argument(nargs="?",
                         dest="env_stable_file",
                         type=Path,
-                        help="set env file for stable network. If not set, only the experiment env will be used.")
+                        default=default_env,
+                        help="set env file for stable network. (Default: " + str(default_env.relative_to(Path.cwd())) + ")")
 
     parser.add_argument("-s",
                         dest="setup_time",
                         type=int,
-                        default="60",
-                        help="set time given to start stable network, before invoking exp. (Default: 60 seconds)")
+                        default="30",
+                        help="set time given to start stable network, before invoking exp. (Default: 30 seconds)")
 
     parser.add_argument("-t",
                         dest="timeout",
@@ -139,10 +131,10 @@ def setup_args():
                         default=False,
                         help="export results")
 
-    parser.add_argument("-c",
+    parser.add_argument("--no-clean",
                         dest="clean",
-                        action="store_true",
-                        default=False,
+                        action="store_false",
+                        default=True,
                         help="clean db before run")
 
     parser.add_argument("--no-plot",
@@ -185,7 +177,7 @@ def clean_exit():
     # No such thing as too much cleaning!
     clean_env()
 
-    if args.clean:
+    if args.export:
         clean_db()
 
     # Stop exp
@@ -196,10 +188,8 @@ def clean_exit():
 def import_scales(env_file):
     scales = {}
 
-    # Clean Up env
-    clean_env()
-
     # Create .env for docker-compose
+    clean_env()
     compose_env_file.symlink_to(env_file)
 
     # Create dict of scales
@@ -212,13 +202,10 @@ def import_scales(env_file):
 
     # Fail safe of if no scales found
     if scales == {}:
-        print("No scales found in env. Continue?")
-        if query_yes_no():
-            print("👌")
-        else:
-            clean_exit()
+        print("No scales found in env:", env_file.name)
+        clean_exit()
     else:
-        print("Scales found in env:")
+        print("Scales found in env:", env_file.name)
         for scale in scales:
             print(scale, ":\t", scales.get(scale))
 
