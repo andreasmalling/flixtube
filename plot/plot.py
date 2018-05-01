@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pymongo
 import statistics
@@ -60,7 +62,7 @@ def plot_user_data_seg(yname, users, collection):
     csv.add_plot("segments", segments)
     for user in users:
         user[yname] = [0 for i in range(last_seg+1)] #maybe change 0 to something else?????????
-        for res in db[collection].find({"ip": user["ip"]}).sort("seg", pymongo.ASCENDING):
+        for res in db[collection].find({"ip": user["ip"], "responsecode": 200}).sort("seg", pymongo.ASCENDING):
             if res["seg"] < len(user[yname]):
                 user[yname][res["seg"]] = res[yname]
         plt.plot(segments, user[yname], color="green")
@@ -89,7 +91,7 @@ def plot_user_data_seg(yname, users, collection):
 def plot_user_data_time(yname, users, collection):
     csv = CSVBuilder()
     for user in users:
-        cursor = db[collection].find({"ip": user["ip"]}).sort("timestamp", pymongo.ASCENDING)
+        cursor = db[collection].find({"ip": user["ip"], "responsecode": 200}).sort("timestamp", pymongo.ASCENDING)
         xs = []
         ys = []
         cum = 0
