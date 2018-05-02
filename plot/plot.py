@@ -17,6 +17,7 @@ PERSONA = "persona"
 NETWORK = "network"
 
 BEHAVIOURS = ["BINGE", "INCOGNITO", "SKIPPER", "IDLE", "LEECHER"]
+
 COLORDIC = {
     "BINGE": "blue",
     "INCOGNITO": "green",
@@ -25,8 +26,8 @@ COLORDIC = {
     "LEECHER" : "magenta"
 }
 # init mongo client
-client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
-# client = pymongo.MongoClient("mongo", 27017)
+# client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
+client = pymongo.MongoClient("mongo", 27017)
 db = client["flixtube_db"]
 
 
@@ -81,6 +82,10 @@ def main():
     plot_network_data_hist_role("rx_bytes", "tx_bytes", users_b)
     plot_network_data_hist_role("rx_packets", "tx_packets", users_b)
 
+    print("plotting failure stats,")
+    plot_user_stall(users_no_idle)
+    plot_user_not_ok(AUDIO)
+    plot_user_not_ok(VIDEO)
     # close mongo client
     client.close()
 
@@ -265,6 +270,53 @@ def plot_network_data_hist_role(yname1, yname2, users_b):
     plt.ylabel(yname1[3:])
     path = PATH + "network_" + yname1 + "_" + yname2 + "_hist_role_stdev"
     csv_s.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
+    plt.gcf().clear()
+
+
+def plot_user_stall(users):
+    csv = CSVBuilder()
+    xs = [user_name(user) for user in users]
+    ys = []
+    for user in users:
+        count = db["stall"].count({"ip": user["ip"]})
+        ys += [count]
+    xs += ["mean"]
+    xs += ["stdev"]
+    mean = statistics.mean(ys)
+    stdev = statistics.stdev(ys)
+    ys += [mean, stdev]
+    csv.add_plot("users", xs)
+    csv.add_plot("stalls", ys)
+    plt.bar(xs, ys, color="blue")
+    plt.title("stall histogram")
+    plt.xlabel("users")
+    plt.xticks(rotation=45)
+    plt.ylabel("# stalls")
+    path = PATH + "stall_hist"
+    csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
+    plt.gcf().clear()
+
+
+def plot_user_not_ok(collection):
+
+    csv = CSVBuilder()
+    last_seg = db[AUDIO].find_one(sort=[("seg", pymongo.DESCENDING)])["seg"]
+    xs = [str(x) for x in range(last_seg+1)]
+    ys = []
+    for i in range(last_seg+1):
+        count = db[collection].count({"$and": [{"responsecode": {"$ne": 200}}, {"seg": i}]})
+        ys += [count]
+    csv.add_plot("segments", xs)
+    csv.add_plot("fails", ys)
+    plt.bar(xs, ys, color="blue")
+    plt.title("failure histogram " + collection)
+    plt.xlabel("users")
+    plt.xticks(rotation=45)
+    plt.ylabel("# download failures")
+    path = PATH + "failure_hist_" + collection
+    csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
 
