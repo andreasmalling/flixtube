@@ -6,33 +6,18 @@ var index = {video: 0, audio: 0};
 var segmentPattern = /Segment_([0-9]+)/;
 var mpdPattern = /ip[fn]s\/[0-9a-zA-Z]+/;
 
-var waitElement = {stream: "", time: 0};
-var isWaiting = false;
-
 var metricsUrl = "http://metric:8081";
 
-function waitStart(streamType) {
-    waitElement.time = Date.now();
-    waitElement.stream = streamType;
-    isWaiting = true;
-}
+function reportStall(id, player, progress) {
+    var res = {
+        time: progress,
+        mpd: player.getSource().match(mpdPattern)[0],
+        ip: id
+    };
 
-function waitStop(id, player) {
-    if (isWaiting) {
-        var res = {
-            resume: Date.now(),
-            stall: waitElement.time,
-            stream: waitElement.stream,
-            mpd: player.getSource().match(mpdPattern)[0],
-            ip: id
-        };
-
-        isWaiting = false;
-
-        sendJson(metricsUrl + "/metrics/wait", res)
-            .then((response) => console.log("Wait Server Response", res, response.text()))
-            .catch((error) => console.error("Wait Server Error", res, error));
-    }
+    sendJson(metricsUrl + "/metrics/stall", res)
+        .then((response) => console.log("Stall Server Response", res, response.text()))
+        .catch((error) => console.error("Stall Server Error", res, error));
 }
 
 function updateMetrics(id, player, streamInfo) {
@@ -90,8 +75,6 @@ function updateMetrics(id, player, streamInfo) {
             .then((response) => console.log("Metric Server Response", res, response.text()))
             .catch((error) => console.error("Metric Server Error", res, error));
     }
-
-    // TODO: Add buffer state?
 }
 
 function sendJson(url, data) {

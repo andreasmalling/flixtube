@@ -2,7 +2,7 @@
 
 import argparse
 import datetime
-import sys
+import time
 from subprocess import PIPE, Popen, TimeoutExpired
 from pathlib import Path
 
@@ -70,11 +70,10 @@ def stop_docker_compose():
 def clean_db():
     print_title("DELETE FLiXTUBE DB")
     run_mongo()
-    proc = docker_exec("mongo",
-                       [ "mongo",
-                         "flixtube_db",
-                         "--eval", "db.dropDatabase()"])
-    proc.wait()
+    docker_exec("mongo",
+                [ "mongo",
+                  "flixtube_db",
+                  "--eval", "db.dropDatabase()"])
 
 
 def run_docker_compose(scales, run_users=True):
@@ -135,7 +134,7 @@ def setup_args():
                         dest="clean",
                         action="store_false",
                         default=True,
-                        help="clean db before run")
+                        help="don't clean db before or after run")
 
     parser.add_argument("--no-plot",
                         dest="plot",
@@ -152,24 +151,39 @@ def clean_env():
 
 
 def docker_exec(container, command ):
-    return Popen(["docker-compose", "exec"] + [container] + command )
+    count = 0
+    while True:
+        proc = Popen(["docker-compose", "exec"] + [container] + command )
+        proc.communicate()
+
+        if proc.returncode == 0 or count > 10:
+            break
+        else:
+            count += 1
+            print("Try:", count)
+            time.sleep(1)
+
+    return proc
 
 
 def run_mongo():
     mongo_scale = import_scales(mongo_env)
-    return run_docker_compose(mongo_scale, False)
+    proc = run_docker_compose(mongo_scale, False)
+    # try:
+    #     proc.wait(timeout=10)
+    # except:
+    #     pass
+    return proc
 
 
 def export( filename=datetime.datetime.now().isoformat('_') ):
     print_title("Export FLiXTUBE DB")
     run_mongo()
-
-    proc = docker_exec( "mongo",
-                       [ "mongodump",
-                         "--db", "flixtube_db",
-                         "--gzip",
-                         "--archive=" + "/data/dump/" + filename + ".gz"])
-    proc.wait()
+    docker_exec( "mongo",
+                [ "mongodump",
+                  "--db", "flixtube_db",
+                  "--gzip",
+                  "--archive=" + "/data/dump/" + filename + ".gz"])
 
     print("Export done.")
 
@@ -177,7 +191,7 @@ def clean_exit():
     # No such thing as too much cleaning!
     clean_env()
 
-    if args.export:
+    if args.clean:
         clean_db()
 
     # Stop exp
