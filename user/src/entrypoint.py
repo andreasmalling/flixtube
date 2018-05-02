@@ -16,6 +16,7 @@ class PersonaType(Enum):
     INCOGNITO = 1
     SKIPPER = 2
     IDLE = 3
+    LEECHER = 4
 
     def __str__(self):
         return self.name
@@ -37,10 +38,11 @@ parser.set_defaults(video_hash="QmbVvwx8KidXo8Awr6GoF1QTrfkkuZsQjg33onkvwCf8ap")
 parser.add_argument('persona', type=PersonaType.from_string, choices=list(PersonaType))
 parser.add_argument('persona_options', metavar='OPTION', type=int, nargs='*',
                     help="options passed to PERSONA\n"
-                         "BINGE: takes 1 argument (0 = don't leech, 1 = leech)\n"
+                         "BINGE: takes no arguments\n"
                          "INCOGNITO: takes 1 argument, how many seconds of the end of the video to watch\n"
                          "SKIPPER: takes 2 arguments, 1st is the skip length, 2nd is the watch length\n"
-                         "IDLE: takes no arguments")
+                         "IDLE: takes no arguments\n"
+                         "LEECHER: takes no arguments")
 
 # Browser Options
 parser.add_argument("-m", "--manual", action="store_true", dest="manual", default=False,
@@ -95,10 +97,11 @@ else:
     print(personaType)
     # switch case
     persona = {
-        PersonaType.BINGE: BingePersona(user, hash, args.leave_website, options),
-        PersonaType.INCOGNITO: IncognitoPersona(user, hash, args.leave_website, options),
-        PersonaType.SKIPPER: SkipperPersona(user, hash, args.leave_website, options),
-        PersonaType.IDLE: IdlePersona(user, hash, args.leave_website, options)
+        PersonaType.BINGE:      BingePersona(user, hash, args.leave_website, [0]),
+        PersonaType.INCOGNITO:  IncognitoPersona(user, hash, args.leave_website, options),
+        PersonaType.SKIPPER:    SkipperPersona(user, hash, args.leave_website, options),
+        PersonaType.IDLE:       IdlePersona(user, hash, args.leave_website, options),
+        personaType.LEECHER:    BingePersona(user, hash, args.leave_website, [1])
     }[personaType]
     persona.act()
     persona.leave_website()
