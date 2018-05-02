@@ -17,7 +17,13 @@ PERSONA = "persona"
 NETWORK = "network"
 
 BEHAVIOURS = ["BINGE", "INCOGNITO", "SKIPPER", "IDLE", "LEECHER"]
-
+COLORDIC = {
+    "BINGE": "blue",
+    "INCOGNITO": "green",
+    "SKIPPER": "red",
+    "IDLE" : "cyan",
+    "LEECHER" : "magenta"
+}
 # init mongo client
 client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
 # client = pymongo.MongoClient("mongo", 27017)
@@ -36,48 +42,40 @@ def main():
     for i in range(len(users)):
         users[i]["num"] = i
 
-    #behaviour average plots
+    # behaviour average plots
     users_b = []
     for i in range(len(BEHAVIOURS)):
         tmp = list(filter(lambda x: x["type"] == BEHAVIOURS[i], users))
         if tmp:
             users_b += [tmp]
 
+    print("plotting user data for segments")
+    plot_user_data_seg("latency", users_no_idle, AUDIO)
+    plot_user_data_seg("download", users_no_idle, AUDIO)
+    plot_user_data_seg("latency", users_no_idle, VIDEO)
+    plot_user_data_seg("download", users_no_idle, VIDEO)
 
-    # print("plotting user data for segments")
-    # plot_user_data_seg("latency", users_no_idle, AUDIO)
-    # plot_user_data_seg("download", users_no_idle, AUDIO)
-    # plot_user_data_seg("latency", users_no_idle, VIDEO)
-    # plot_user_data_seg("download", users_no_idle, VIDEO)
-    #
-    # print("plotting user data over time")
-    # plot_user_data_time("latency", users_no_idle, AUDIO)
-    # plot_user_data_time("download", users_no_idle, AUDIO)
-    # plot_user_data_time("latency", users_no_idle, VIDEO)
-    # plot_user_data_time("download", users_no_idle, VIDEO)
-    #
-    # print("plotting network data over time")
-    # plot_network_data_time("rx_bytes", users)
-    # plot_network_data_time("tx_bytes", users)
-    # plot_network_data_time("rx_packets", users)
-    # plot_network_data_time("tx_packets", users)
-    #
+    print("plotting user data over time")
+    plot_user_data_time("latency", users_no_idle, AUDIO)
+    plot_user_data_time("download", users_no_idle, AUDIO)
+    plot_user_data_time("latency", users_no_idle, VIDEO)
+    plot_user_data_time("download", users_no_idle, VIDEO)
+
+    print("plotting network data over time")
+    plot_network_data_time("rx_bytes", users)
+    plot_network_data_time("tx_bytes", users)
+    plot_network_data_time("rx_packets", users)
+    plot_network_data_time("tx_packets", users)
+
     print("plotting network histogram")
     plot_network_data_hist("rx_bytes", "tx_bytes", users)
     plot_network_data_hist("rx_packets", "tx_packets", users)
 
-    # print("plotting user data for segments per role")
-    # plot_user_data_seg_role("latency", users_b, AUDIO)
-    # plot_user_data_seg_role("download", users_b, AUDIO)
-    # plot_user_data_seg_role("latency", users_b, VIDEO)
-    # plot_user_data_seg_role("download", users_b, VIDEO)
-    #
-    # print("plotting user data over time per role")
-    # plot_user_data_time_role("latency", users_no_idle, AUDIO)
-    # plot_user_data_time_role("download", users_no_idle, AUDIO)
-    # plot_user_data_time_role("latency", users_no_idle, VIDEO)
-    # plot_user_data_time_role("download", users_no_idle, VIDEO)
-
+    print("plotting user data for segments per role")
+    plot_user_data_seg_role("latency", users_b, AUDIO)
+    plot_user_data_seg_role("download", users_b, AUDIO)
+    plot_user_data_seg_role("latency", users_b, VIDEO)
+    plot_user_data_seg_role("download", users_b, VIDEO)
 
     print("plotting network histogram per role")
     plot_network_data_hist_role("rx_bytes", "tx_bytes", users_b)
@@ -127,7 +125,6 @@ def plot_user_data_seg_role(yname, users_b, collection):
     csv.add_plot("segments", segments)
     for role in users_b:
         for user in role:
-            print(user["type"])
             user[yname] = [0 for i in range(last_seg+1)] #maybe change 0 to something else?????????
             for res in db[collection].find({"ip": user["ip"], "responsecode": 200}).sort("seg", pymongo.ASCENDING):
                 if res["seg"] < len(user[yname]):
@@ -162,32 +159,7 @@ def plot_user_data_time(yname, users, collection):
             xs += [elem["timestamp"]]
             cum += elem[yname]
             ys += [cum]
-        plt.plot(xs, ys, label=user_name(user))
-        csv.add_plot("x" + str(user["num"]), xs)
-        csv.add_plot("y" + str(user["num"]), ys)
-    plt.title(collection + " " + yname + " over time")
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    plt.xlabel("time")
-    plt.ylabel(yname)
-    path = PATH + collection + "_" + yname + "_time"
-    csv.export(path + ".csv")
-    plt.savefig(path + ".png", bbox_inches='tight')
-    plt.gcf().clear()
-
-
-def plot_user_data_time_role(yname, users_b, collection): #TODO
-    csv = CSVBuilder()
-    for role in users_b:
-        for user in role:
-            cursor = db[collection].find({"ip": user["ip"], "responsecode": 200}).sort("timestamp", pymongo.ASCENDING)
-            xs = []
-            ys = []
-            cum = 0
-            for elem in cursor:
-                xs += [elem["timestamp"]]
-                cum += elem[yname]
-                ys += [cum]
-        plt.plot(xs, ys, label=user_name(user))
+        plt.plot(xs, ys, label=user_name(user), color=COLORDIC[user["type"]])
         csv.add_plot("x" + str(user["num"]), xs)
         csv.add_plot("y" + str(user["num"]), ys)
     plt.title(collection + " " + yname + " over time")
@@ -208,7 +180,7 @@ def plot_network_data_time(yname, users):
         for res in db[NETWORK].find({"ip": user["ip"]}).sort("ts", pymongo.ASCENDING):
             xs += [int(time.mktime(dateutil.parser.parse(res["ts"]).timetuple()))]
             ys += [res["net"][yname]]
-        plt.plot(xs, ys, label=user_name(user))
+        plt.plot(xs, ys, label=user_name(user), color=COLORDIC[user["type"]])
         csv.add_plot("x" + str(user["num"]), xs)
         csv.add_plot("y" + str(user["num"]), ys)
     plt.title("network " + yname)
