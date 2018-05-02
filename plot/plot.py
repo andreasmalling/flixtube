@@ -62,15 +62,26 @@ def main():
     # plot_network_data_time("rx_packets", users)
     # plot_network_data_time("tx_packets", users)
     #
-    # print("plotting network histogram")
-    # plot_network_data_hist("rx_bytes", "tx_bytes", users)
-    # plot_network_data_hist("rx_packets", "tx_packets", users)
+    print("plotting network histogram")
+    plot_network_data_hist("rx_bytes", "tx_bytes", users)
+    plot_network_data_hist("rx_packets", "tx_packets", users)
+
+    # print("plotting user data for segments per role")
+    # plot_user_data_seg_role("latency", users_b, AUDIO)
+    # plot_user_data_seg_role("download", users_b, AUDIO)
+    # plot_user_data_seg_role("latency", users_b, VIDEO)
+    # plot_user_data_seg_role("download", users_b, VIDEO)
+    #
+    # print("plotting user data over time per role")
+    # plot_user_data_time_role("latency", users_no_idle, AUDIO)
+    # plot_user_data_time_role("download", users_no_idle, AUDIO)
+    # plot_user_data_time_role("latency", users_no_idle, VIDEO)
+    # plot_user_data_time_role("download", users_no_idle, VIDEO)
 
 
-    plot_user_data_seg_role("latency", users_b, AUDIO)
-    plot_user_data_seg_role("download", users_b, AUDIO)
-    plot_user_data_seg_role("latency", users_b, VIDEO)
-    plot_user_data_seg_role("download", users_b, VIDEO)
+    print("plotting network histogram per role")
+    plot_network_data_hist_role("rx_bytes", "tx_bytes", users_b)
+    plot_network_data_hist_role("rx_packets", "tx_packets", users_b)
 
     # close mongo client
     client.close()
@@ -164,6 +175,31 @@ def plot_user_data_time(yname, users, collection):
     plt.gcf().clear()
 
 
+def plot_user_data_time_role(yname, users_b, collection): #TODO
+    csv = CSVBuilder()
+    for role in users_b:
+        for user in role:
+            cursor = db[collection].find({"ip": user["ip"], "responsecode": 200}).sort("timestamp", pymongo.ASCENDING)
+            xs = []
+            ys = []
+            cum = 0
+            for elem in cursor:
+                xs += [elem["timestamp"]]
+                cum += elem[yname]
+                ys += [cum]
+        plt.plot(xs, ys, label=user_name(user))
+        csv.add_plot("x" + str(user["num"]), xs)
+        csv.add_plot("y" + str(user["num"]), ys)
+    plt.title(collection + " " + yname + " over time")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.xlabel("time")
+    plt.ylabel(yname)
+    path = PATH + collection + "_" + yname + "_time"
+    csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
+    plt.gcf().clear()
+
+
 def plot_network_data_time(yname, users):
     csv = CSVBuilder()
     for user in users:
@@ -206,6 +242,57 @@ def plot_network_data_hist(yname1, yname2, users):
     plt.ylabel(yname1[3:])
     path = PATH + "network_" + yname1 + "_" + yname2 + "_hist"
     csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
+    plt.gcf().clear()
+
+
+def plot_network_data_hist_role(yname1, yname2, users_b):
+    csv_m = CSVBuilder()
+    csv_s = CSVBuilder()
+    xs = [role[0]["type"] for role in users_b]
+    ys1_m = []
+    ys2_m = []
+    ys1_s = []
+    ys2_s = []
+    csv_m.add_plot("users", xs)
+    csv_s.add_plot("users", xs)
+    for role in users_b:
+        ys1 = []
+        ys2 = []
+        for user in role:
+            res = db[NETWORK].find_one({"ip": user["ip"]}, sort=[("ts", pymongo.DESCENDING)])
+            ys1 += [res["net"][yname1]]
+            ys2 += [res["net"][yname2]]
+        ys1_m += [statistics.mean(ys1)]
+        ys2_m += [statistics.mean(ys2)]
+        ys1_s += [statistics.stdev(ys1)]
+        ys2_s += [statistics.stdev(ys2)]
+
+    csv_m.add_plot("rx", ys1_m)
+    csv_m.add_plot("tx", ys2_m)
+    plt.bar(xs, ys1_m, color="blue", width=-0.4, align="edge", label=yname1)
+    plt.bar(xs, ys2_m, color="red", width=0.4, align="edge", label=yname2)
+    plt.title("network histogram " + yname1 + " & " + yname2)
+    plt.legend()
+    plt.xlabel("users")
+    plt.xticks(rotation=45)
+    plt.ylabel(yname1[3:])
+    path = PATH + "network_" + yname1 + "_" + yname2 + "_hist_role_mean"
+    csv_m.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
+    plt.gcf().clear()
+
+    csv_s.add_plot("rx", ys1_s)
+    csv_s.add_plot("tx", ys2_s)
+    plt.bar(xs, ys1_s, color="blue", width=-0.4, align="edge", label=yname1)
+    plt.bar(xs, ys2_s, color="red", width=0.4, align="edge", label=yname2)
+    plt.title("network histogram " + yname1 + " & " + yname2)
+    plt.legend()
+    plt.xlabel("users")
+    plt.xticks(rotation=45)
+    plt.ylabel(yname1[3:])
+    path = PATH + "network_" + yname1 + "_" + yname2 + "_hist_role_stdev"
+    csv_s.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
 
