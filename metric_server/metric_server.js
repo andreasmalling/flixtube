@@ -15,7 +15,7 @@ const app = express();
 const DBNAME = "flixtube_db";
 const VIDEOCOLLECTION = "video";
 const AUDIOCOLLECTION = "audio";
-const WAITCOLLECTION = "wait";
+const STALLCOLLECTION = "stall";
 const PERSONACOLLECTION = "persona";
 
 const OK = 200;
@@ -70,10 +70,10 @@ app.post("/metrics", function (req, res, ignore) {   // ignore = next (?)
     }
 });
 
-app.post("/metrics/wait", function (req, res, ignore) { //ignore = next
+app.post("/metrics/stall", function (req, res, ignore) { //ignore = next
     try {
         var json = req.body;
-        insertInDatabase(WAITCOLLECTION, json);
+        insertInDatabase(STALLCOLLECTION, json);
         res.sendStatus(OK);
     } catch (err) {
         res.status(BADREQ).send("database error: " +  err.toString());
@@ -117,7 +117,7 @@ MongoClient.connect(mongo_url, function (err, db) {
     flixtube_db = dbo;
     createCollection(VIDEOCOLLECTION);
     createCollection(AUDIOCOLLECTION);
-    createCollection(WAITCOLLECTION);
+    createCollection(STALLCOLLECTION);
     createCollection(PERSONACOLLECTION);
 });
 
