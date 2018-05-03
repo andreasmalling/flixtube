@@ -1,9 +1,21 @@
+from time import sleep
+from random import randint
 from splinter import Browser
 
 
 class User:
     def __init__(self, isHeadless=True):
-        self.browser = Browser('chrome', headless=isHeadless)
+        while True:
+            try:
+                self.browser = Browser('chrome', headless=isHeadless)
+            except ConnectionResetError as e:
+                print(e)
+                wait = randint(1,10) / 10
+                print("Sleeping for", wait, "seconds")
+                sleep( wait )
+                continue
+            break
+
 
     def visit(self, url):
         self.browser.visit(url)
