@@ -33,6 +33,6 @@ if __name__ == '__main__':
             if (len(insertList) > 0):
                 db['network'].insert_many(insertList)
                 insertList = []
-        except:
-            pass
+        except KeyError as e:
+            print(e)
         sleep(pull_rate)
