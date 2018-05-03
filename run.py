@@ -26,7 +26,7 @@ def main():
         print_title("SETUP OF STABLE NETWORK")
 
         scales = {**scales, **(import_scales(args.env_stable_file))}    # Merge dicts
-        proc = run_docker_compose(scales, run_users=False)
+        proc = run_docker_compose(scales)
         try:
             proc.wait( args.setup_time )
         except TimeoutExpired:
