@@ -3,8 +3,7 @@ import subprocess
 import argparse
 from enum import Enum, unique
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+from retrying import retry
 from User import User
 from BingePersona import BingePersona
 from IncognitoPersona import IncognitoPersona
@@ -88,8 +87,7 @@ def main():
         personaType = args.persona
         options = args.persona_options
 
-        #Log persona type to database
-        requests_retry_session().get('http://metric:8081/metrics/persona/' + personaType.name)
+        log_persona(personaType.name)
 
         user = User(args.browserHead)
 
@@ -110,25 +108,10 @@ def main():
         persona.leave_website()
 
 
-# Src: https://www.peterbe.com/plog/best-practice-with-retries-with-requests
-def requests_retry_session(
-        retries=3,
-        backoff_factor=0.3,
-        status_forcelist=(500, 502, 504),
-        session=None,
-):
-    session = session or requests.Session()
-    retry = Retry(
-        total=retries,
-        read=retries,
-        connect=retries,
-        backoff_factor=backoff_factor,
-        status_forcelist=status_forcelist,
-    )
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
-    return session
+#Log persona type to database
+@retry(wait_exponential_multiplier=100, wait_exponential_max=10000)
+def log_persona(persona):
+    return requests.get('http://metric:8081/metrics/persona/' + persona)
 
 
 if __name__ == '__main__':
