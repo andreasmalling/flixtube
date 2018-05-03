@@ -17,19 +17,22 @@ if __name__ == '__main__':
     db = mongo_client["flixtube_db"]
 
     while True:
-        client = docker.DockerClient(base_url=BASEURL)
-        containers = client.containers.list()
-        insertList = []
-        for container in containers:
-            if container.attrs['Config']['Image'] != IMAGE:
-                continue
-            ip = container.attrs['NetworkSettings']['Networks']['flixtube_default']['IPAddress']
-            val = container.stats(decode=True, stream=False)
-            data = {'ip': ip,
-                    'ts': val['read'],
-                    'net': val['networks']['eth0']}
-            insertList += [data]
-        if (len(insertList) > 0):
-            db['network'].insert_many(insertList)
+        try:
+            client = docker.DockerClient(base_url=BASEURL)
+            containers = client.containers.list()
             insertList = []
+            for container in containers:
+                if container.attrs['Config']['Image'] != IMAGE:
+                    continue
+                ip = container.attrs['NetworkSettings']['Networks']['flixtube_default']['IPAddress']
+                val = container.stats(decode=True, stream=False)
+                data = {'ip': ip,
+                        'ts': val['read'],
+                        'net': val['networks']['eth0']}
+                insertList += [data]
+            if (len(insertList) > 0):
+                db['network'].insert_many(insertList)
+                insertList = []
+        except:
+            pass
         sleep(pull_rate)
