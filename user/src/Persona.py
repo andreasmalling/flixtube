@@ -37,7 +37,7 @@ class Persona:
         return dur
 
 
-    def sleep_until(self, end=get_duration(), interval=1):
+    def sleep_until(self, end, interval=1):
         progress = self.get_time()
 
         while progress < end:

@@ -20,4 +20,4 @@ class BingePersona(Persona):
             self.user.toggle_gateway()
         self.user.watch_hash(self.hash)
 
-        self.sleep_until()
+        self.sleep_until(self.get_duration())
