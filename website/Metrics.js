@@ -8,9 +8,11 @@ var mpdPattern = /ip[fn]s\/[0-9a-zA-Z]+/;
 
 var metricsUrl = "http://metric:8081";
 
-function reportStall(id, player, progress) {
+function reportStall(id, player, progress, stallStart) {
     var res = {
         time: progress,
+        start: stallStart,
+        end: Date.now(),
         mpd: player.getSource().match(mpdPattern)[0],
         ip: id
     };
