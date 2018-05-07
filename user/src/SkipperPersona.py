@@ -19,16 +19,15 @@ class SkipperPersona(Persona):
         else:
             self.watch_time = DEFAULTWATCHTIME
 
-    def get_time(self):
-        return self.user.browser.evaluate_script("player.time()")
 
     def act(self):
         self.user.visit("http://host/webplayer.html")
         self.user.watch_hash(self.hash)
-        duration = None
+
+        duration = self.get_duration()
         while duration is None:
             sleep(0.1)
-            duration = self.user.browser.evaluate_script("player.duration()")
+            duration = self.get_duration()
 
         jump_to = 0
         while jump_to < duration:
@@ -36,6 +35,6 @@ class SkipperPersona(Persona):
                 sleep(0.1)
                 continue
             self.user.jump_to(jump_to)
-            sleep(self.watch_time)
+            self.sleep_until( self.get_time() + self.watch_time )
             jump_to = self.get_time() + self.skip_length
 

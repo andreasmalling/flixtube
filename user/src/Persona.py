@@ -17,3 +17,29 @@ class Persona:
             while True:
                 print("sleep")
                 sleep(5)
+
+
+    def get_time(self):
+        time = self.user.browser.evaluate_script("player.time()")
+        while time is None:
+            print("Retrying get_time")
+            sleep(0.01)
+            time = self.user.browser.evaluate_script("player.time()")
+        return time
+
+
+    def get_duration(self):
+        dur = self.user.browser.evaluate_script("player.duration()")
+        while dur is None:
+            print("Retrying get_duration")
+            sleep(0.01)
+            dur = self.user.browser.evaluate_script("player.duration()")
+        return dur
+
+
+    def sleep_until(self, end=get_duration(), interval=1):
+        progress = self.get_time()
+
+        while progress < end:
+            sleep(interval)
+            progress = self.get_time()

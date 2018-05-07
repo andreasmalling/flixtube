@@ -19,8 +19,5 @@ class BingePersona(Persona):
         if self.leech == 1:
             self.user.toggle_gateway()
         self.user.watch_hash(self.hash)
-        duration = None
-        while duration is None:
-            sleep(0.1)
-            duration = self.user.browser.evaluate_script("player.duration()")
-        sleep(duration)
+
+        self.sleep_until()

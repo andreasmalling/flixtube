@@ -33,7 +33,7 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 
     # Default options
-    parser.set_defaults(video_hash="QmbVvwx8KidXo8Awr6GoF1QTrfkkuZsQjg33onkvwCf8ap")
+    parser.set_defaults(video_hash="QmXMo4ZC2AQuR4Q2LCHi4uy6UQkGJFjxgfLMwhWZRu1iah")
 
     # Positional Arguments
     parser.add_argument('persona', type=PersonaType.from_string, choices=list(PersonaType))
@@ -76,6 +76,7 @@ def main():
             ipfs.bootstrap_local()
 
         if args.ipfsSeed:
+            print("Seeding...")
             ipfs.gateway_public()
             ipfs.add("/usr/src/app/video_dashed/")
 
@@ -111,6 +112,7 @@ def main():
 #Log persona type to database
 @retry(wait_exponential_multiplier=100, wait_exponential_max=10000)
 def log_persona(persona):
+    print( "Logging Persona:", persona)
     return requests.get('http://metric:8081/metrics/persona/' + persona)
 
 

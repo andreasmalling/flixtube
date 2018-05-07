@@ -35,7 +35,7 @@ def main():
     # Run exp
     print_title("SETUP OF EXP. NETWORK")
     scales = {**scales, **(import_scales(args.env_exp_file))}    # Merge dicts
-    proc = run_docker_compose(scales, run_users=True)
+    proc = run_docker_compose(scales)
 
     # Possible timeout of exp
     if args.timeout > 0:
@@ -76,9 +76,7 @@ def clean_db():
                   "--eval", "db.dropDatabase()"])
 
 
-def run_docker_compose(scales, run_users=True):
-    if not run_users:
-        scales = dict((key, value) for key, value in scales.items() if not key.startswith("SCALE_USER"))
+def run_docker_compose(scales):
 
     main_scale = [ "--scale", "bootstrap="  + scales.get("SCALE_BOOT", "0"),
                    "--scale", "host="       + scales.get("SCALE_HOST", "0"),
@@ -95,7 +93,7 @@ def run_docker_compose(scales, run_users=True):
                    "--scale", "user_5="     + scales.get("SCALE_USER_5", "0"),
                    "--scale", "user_6="     + scales.get("SCALE_USER_6", "0")]
 
-    return Popen(["docker-compose", "up"] + main_scale + user_scale, stdout=PIPE)
+    return Popen(["docker-compose", "up", "--no-recreate"] + main_scale + user_scale, stdout=PIPE)
 
 
 def setup_args():
@@ -168,11 +166,7 @@ def docker_exec(container, command ):
 
 def run_mongo():
     mongo_scale = import_scales(mongo_env)
-    proc = run_docker_compose(mongo_scale, False)
-    # try:
-    #     proc.wait(timeout=10)
-    # except:
-    #     pass
+    proc = run_docker_compose(mongo_scale)
     return proc
 
 
