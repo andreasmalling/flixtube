@@ -16,14 +16,15 @@ WAIT = "wait"
 PERSONA = "persona"
 NETWORK = "network"
 
-BEHAVIOURS = ["BINGE", "INCOGNITO", "SKIPPER", "IDLE", "LEECHER"]
+BEHAVIOURS = ["BINGE", "INCOGNITO", "SKIPPER", "IDLE", "LEECHER", "SEEDER"]
 
 COLORDIC = {
     "BINGE": "blue",
-    "INCOGNITO": "green",
+    "INCOGNITO": "gray",
     "SKIPPER": "red",
     "IDLE" : "cyan",
-    "LEECHER" : "magenta"
+    "LEECHER" : "magenta",
+    "SEEDER" : "green"
 }
 # init mongo client
 # client = pymongo.MongoClient("localhost", 27017) #temporary ip for testing
@@ -37,7 +38,7 @@ def main():
     PATH = "output/" + datetime.datetime.now().isoformat('_') + "/"
     os.mkdir(PATH)
     users = [persona for persona in db[PERSONA].find()]
-    users_no_idle = list(filter(lambda x: x["type"] != "IDLE", users))
+    users_no_idle = list(filter(lambda x: x["type"] != "IDLE" and x["type"] != "SEEDER", users))
 
     # give users identifying number
     for i in range(len(users)):
@@ -82,8 +83,11 @@ def main():
     plot_network_data_hist_role("rx_bytes", "tx_bytes", users_b)
     plot_network_data_hist_role("rx_packets", "tx_packets", users_b)
 
-    print("plotting failure stats,")
+    print("plotting failure stats")
     plot_user_stall(users_no_idle)
+    plot_user_stall_time(users_no_idle)
+    plot_user_stall_time_hist_all(users_no_idle)
+    plot_user_stall_time_role(users_b)
     plot_user_not_ok(AUDIO)
     plot_user_not_ok(VIDEO)
     # close mongo client
@@ -112,12 +116,12 @@ def plot_user_data_seg(yname, users, collection):
     plt.plot(segments, stdev, color="blue", label="stdev")
     csv.add_plot("stdev", stdev)
 
-    plt.title(collection + " " + yname + " per segments")
+    path = PATH + collection + "_" + yname + "_seg"
+    plt.title(path[len(PATH):])
     plt.legend()
     plt.xlabel("segment number")
     plt.ylabel(yname)
 
-    path = PATH + collection + "_" + yname + "_seg"
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
@@ -142,12 +146,12 @@ def plot_user_data_seg_role(yname, users_b, collection):
         plt.plot(segments, stdev, color="blue", label="stdev:"+role[0]["type"])
         csv.add_plot("stdev:"+role[0]["type"], stdev)
 
-    plt.title(collection + " " + yname + " per segments")
+    path = PATH + collection + "_" + yname + "_seg_role"
+    plt.title(path[len(PATH):])
     plt.legend()
     plt.xlabel("segment number")
     plt.ylabel(yname)
 
-    path = PATH + collection + "_" + yname + "_seg_role"
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
@@ -167,11 +171,11 @@ def plot_user_data_time(yname, users, collection):
         plt.plot(xs, ys, label=user_name(user), color=COLORDIC[user["type"]])
         csv.add_plot("x" + str(user["num"]), xs)
         csv.add_plot("y" + str(user["num"]), ys)
-    plt.title(collection + " " + yname + " over time")
+    path = PATH + collection + "_" + yname + "_time"
+    plt.title(path[len(PATH):])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xlabel("time")
     plt.ylabel(yname)
-    path = PATH + collection + "_" + yname + "_time"
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
@@ -188,11 +192,11 @@ def plot_network_data_time(yname, users):
         plt.plot(xs, ys, label=user_name(user), color=COLORDIC[user["type"]])
         csv.add_plot("x" + str(user["num"]), xs)
         csv.add_plot("y" + str(user["num"]), ys)
-    plt.title("network " + yname)
+    path = PATH + "network_" + yname + "_time"
+    plt.title(path[len(PATH):])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xlabel("time")
     plt.ylabel(yname[3:])
-    path = PATH + "network_" + yname + "_time"
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
@@ -212,12 +216,12 @@ def plot_network_data_hist(yname1, yname2, users):
     csv.add_plot("tx", ys2)
     plt.bar(xs, ys1, color="blue", width=-0.4, align="edge", label=yname1)
     plt.bar(xs, ys2, color="red", width=0.4, align="edge", label=yname2)
-    plt.title("network histogram " + yname1 + " & " + yname2)
+    path = PATH + "network_" + yname1 + "_" + yname2 + "_hist"
+    plt.title(path[len(PATH):])
     plt.legend()
     plt.xlabel("users")
     plt.xticks(rotation=45)
     plt.ylabel(yname1[3:])
-    path = PATH + "network_" + yname1 + "_" + yname2 + "_hist"
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
@@ -249,12 +253,12 @@ def plot_network_data_hist_role(yname1, yname2, users_b):
     csv_m.add_plot("tx", ys2_m)
     plt.bar(xs, ys1_m, color="blue", width=-0.4, align="edge", label=yname1)
     plt.bar(xs, ys2_m, color="red", width=0.4, align="edge", label=yname2)
-    plt.title("network histogram " + yname1 + " & " + yname2)
+    path = PATH + "network_" + yname1 + "_" + yname2 + "_hist_role_mean"
+    plt.title(path[len(PATH):])
     plt.legend()
     plt.xlabel("users")
     plt.xticks(rotation=45)
     plt.ylabel(yname1[3:])
-    path = PATH + "network_" + yname1 + "_" + yname2 + "_hist_role_mean"
     csv_m.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
@@ -263,12 +267,12 @@ def plot_network_data_hist_role(yname1, yname2, users_b):
     csv_s.add_plot("tx", ys2_s)
     plt.bar(xs, ys1_s, color="blue", width=-0.4, align="edge", label=yname1)
     plt.bar(xs, ys2_s, color="red", width=0.4, align="edge", label=yname2)
-    plt.title("network histogram " + yname1 + " & " + yname2)
+    path = PATH + "network_" + yname1 + "_" + yname2 + "_hist_role_stdev"
+    plt.title(path[len(PATH):])
     plt.legend()
     plt.xlabel("users")
     plt.xticks(rotation=45)
     plt.ylabel(yname1[3:])
-    path = PATH + "network_" + yname1 + "_" + yname2 + "_hist_role_stdev"
     csv_s.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
@@ -289,12 +293,107 @@ def plot_user_stall(users):
     csv.add_plot("users", xs)
     csv.add_plot("stalls", ys)
     plt.bar(xs, ys, color="blue")
-    plt.title("stall histogram")
+    path = PATH + "stall_hist"
+    plt.title(path[len(PATH):])
     plt.xlabel("users")
     plt.xticks(rotation=45)
     plt.ylabel("# stalls")
-    path = PATH + "stall_hist"
     csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
+    plt.gcf().clear()
+
+
+def plot_user_stall_time(users):
+    csv = CSVBuilder()
+    for user in users:
+        cursor = db["stall"].find({"ip": user["ip"]}).sort("start", pymongo.ASCENDING)
+        xs = []
+        ys = []
+        cum = 0
+        for elem in cursor:
+            start = elem["start"]
+            end = elem["end"]
+
+            xs += [start]
+            ys += [cum]
+
+            cum += end - start
+            xs += [end]
+            ys += [cum]
+        plt.plot(xs, ys, label=user_name(user), color=COLORDIC[user["type"]])
+        csv.add_plot("x" + str(user["num"]), xs)
+        csv.add_plot("y" + str(user["num"]), ys)
+    path = PATH + "stall_time"
+    plt.title(path[len(PATH):])
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.xlabel("time")
+    plt.ylabel("time")
+    csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
+    plt.gcf().clear()
+
+
+def plot_user_stall_time_hist_all(users):
+    csv = CSVBuilder()
+    xs = [user_name(user) for user in users]
+    ys = []
+    csv.add_plot("users", xs)
+    for user in users:
+        cursor = db["stall"].find({"ip": user["ip"]}).sort("start", pymongo.ASCENDING)
+        res = 0
+        for elem in cursor:
+            res += elem["end"] - elem["start"]
+        ys += [res]
+    csv.add_plot("rx", ys)
+    plt.bar(xs, ys)
+    path = PATH + "stall_time_hist"
+    plt.title(path[len(PATH):])
+    plt.xlabel("users")
+    plt.xticks(rotation=45)
+    plt.ylabel("time")
+    csv.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
+    plt.gcf().clear()
+
+
+def plot_user_stall_time_role(users_b):
+    csv_m = CSVBuilder()
+    csv_s = CSVBuilder()
+    xs = [role[0]["type"] for role in users_b]
+    ys_m = []
+    ys_s = []
+    csv_m.add_plot("users", xs)
+    csv_s.add_plot("users", xs)
+    for role in users_b:
+        ys = []
+        for user in role:
+            cursor = db["stall"].find({"ip": user["ip"]}).sort("start", pymongo.ASCENDING)
+            res = 0
+            for elem in cursor:
+                res += elem["end"] - elem["start"]
+            ys += [res]
+        ys_m += [statistics.mean(ys)]
+        ys_s += [statistics.stdev(ys)]
+
+    csv_m.add_plot("time", ys_m)
+    plt.bar(xs, ys_m)
+    path = PATH + "stall_hist_role_mean"
+    plt.title(path[len(PATH):])
+    plt.xlabel("users")
+    plt.xticks(rotation=45)
+    plt.ylabel("time")
+    csv_m.export(path + ".csv")
+    plt.savefig(path + ".png", bbox_inches='tight')
+    plt.gcf().clear()
+
+    csv_s.add_plot("time", ys_s)
+    plt.bar(xs, ys_s)
+    path = PATH + "stall_hist_role_stdev"
+    plt.title(path[len(PATH):])
+    plt.xlabel("users")
+    plt.xticks(rotation=45)
+    plt.ylabel("time")
+    csv_s.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
 
@@ -311,11 +410,11 @@ def plot_user_not_ok(collection):
     csv.add_plot("segments", xs)
     csv.add_plot("fails", ys)
     plt.bar(xs, ys, color="blue")
-    plt.title("failure histogram " + collection)
+    path = PATH + "failure_hist_" + collection
+    plt.title(path[len(PATH):])
     plt.xlabel("users")
     plt.xticks(rotation=45)
     plt.ylabel("# download failures")
-    path = PATH + "failure_hist_" + collection
     csv.export(path + ".csv")
     plt.savefig(path + ".png", bbox_inches='tight')
     plt.gcf().clear()
