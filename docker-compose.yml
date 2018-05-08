@@ -32,7 +32,7 @@ services:
   # user which adds content from videos_dashed to local IPFS network
   user_seed:
     <<: *user-template
-    command: ${USER_SEED:- --seed IDLE}
+    command: ${USER_SEED:- SEEDER}
   
   user_1:
     <<: *user-template

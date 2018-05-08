@@ -18,6 +18,7 @@ class PersonaType(Enum):
     SKIPPER = 2
     IDLE = 3
     LEECHER = 4
+    SEEDER = 5
 
     def __str__(self):
         return self.name
@@ -43,30 +44,35 @@ def main():
                              "INCOGNITO: takes 1 argument, how many seconds of the end of the video to watch\n"
                              "SKIPPER: takes 2 arguments, 1st is the skip length, 2nd is the watch length\n"
                              "IDLE: takes no arguments\n"
-                             "LEECHER: takes no arguments")
+                             "LEECHER: takes no arguments\n"
+                             "SEEDER: takes no arguments")
 
     # Browser Options
     parser.add_argument("-m", "--manual", action="store_true", dest="manual", default=False,
-                      help="spawn browser for manual interaction")
+                        help="spawn browser for manual interaction")
     parser.add_argument("--head", action="store_false", dest="browserHead", default=True,
-                      help="display browser while running persona")
+                        help="display browser while running persona")
 
     # IPFS Options
     parser.add_argument("--no-ipfs", action="store_false", dest="ipfs", default=True,
-                          help="don't run ipfs daemon")
+                        help="don't run ipfs daemon")
     parser.add_argument("-g", "--global", action="store_false", dest="ipfsLocal", default=True,
-                          help="use default bootstrap for global access (Default: Local bootstrap")
+                        help="use default bootstrap for global access (Default: Local bootstrap")
     parser.add_argument("-s", "--seed", action="store_true", dest="ipfsSeed", default=False,
-                          help="seeds content from folder videos_dashed in the IPFS network")
+                        help="seeds content from folder videos_dashed in the IPFS network")
 
     # Persona options
     parser.add_argument("-l", "--leave", action="store_true", dest="leave_website", default=False,
-                      help="makes persona leave IPFS network after finishing video (default False)")
+                        help="makes persona leave IPFS network after finishing video (default False)")
     parser.add_argument("-v", "--video-hash", dest="video_hash",
-                      help="set hash of video watched by persona")
+                        help="set hash of video watched by persona")
 
     # Parse options
     args = parser.parse_args()
+
+    # Get Persona
+    personaType = args.persona
+    options = args.persona_options
 
     # Handle Options
     if args.ipfs:
@@ -75,7 +81,7 @@ def main():
         if args.ipfsLocal:
             ipfs.bootstrap_local()
 
-        if args.ipfsSeed:
+        if args.ipfsSeed or personaType == PersonaType.SEEDER:
             print("Seeding...")
             ipfs.gateway_public()
             ipfs.add("/usr/src/app/video_dashed/")
@@ -85,27 +91,24 @@ def main():
     if args.manual:
         subprocess.run(["google-chrome", "--no-first-run", "host/webplayer.html"])
     else:
-        personaType = args.persona
-        options = args.persona_options
-
+        # Add persona with IP to db
         log_persona(personaType.name)
 
-        user = User(args.browserHead)
-
         # Persona Behaviour
+        user = User(args.browserHead)
         hash = args.video_hash
-        persona = None
 
-        print(personaType)
-        # switch case
         persona = {
             PersonaType.BINGE:      BingePersona(user, hash, args.leave_website, [0]),
             PersonaType.INCOGNITO:  IncognitoPersona(user, hash, args.leave_website, options),
             PersonaType.SKIPPER:    SkipperPersona(user, hash, args.leave_website, options),
             PersonaType.IDLE:       IdlePersona(user, hash, args.leave_website, options),
-            personaType.LEECHER:    BingePersona(user, hash, args.leave_website, [1])
+            personaType.LEECHER:    BingePersona(user, hash, args.leave_website, [1]),
+            personaType.SEEDER:     IdlePersona(user, hash, args.leave_website, options)
         }[personaType]
+
         persona.act()
+
         persona.leave_website()
 
 
