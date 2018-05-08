@@ -320,6 +320,10 @@ def plot_user_stall_time(users):
             cum += end - start
             xs += [end]
             ys += [cum]
+        last = db["video"].find_one({"ip": user["ip"], "responsecode": 200}, sort=[("seg", pymongo.DESCENDING)])["timestamp"]
+        if last > xs[-1]:
+            xs += [last]
+            ys += [cum]
         plt.plot(xs, ys, label=user_name(user), color=COLORDIC[user["type"]])
         csv.add_plot("x" + str(user["num"]), xs)
         csv.add_plot("y" + str(user["num"]), ys)
