@@ -2,7 +2,10 @@
 import subprocess
 import argparse
 from enum import Enum, unique
+from time import sleep
+
 import requests
+from numpy.random import random
 from retrying import retry
 from User import User
 from BingePersona import BingePersona
@@ -34,7 +37,8 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 
     # Default options
-    parser.set_defaults(video_hash="QmXMo4ZC2AQuR4Q2LCHi4uy6UQkGJFjxgfLMwhWZRu1iah")
+    parser.set_defaults(video_hash="QmXMo4ZC2AQuR4Q2LCHi4uy6UQkGJFjxgfLMwhWZRu1iah",
+                        random_delay=20)
 
     # Positional Arguments
     parser.add_argument('persona', type=PersonaType.from_string, choices=list(PersonaType))
@@ -66,6 +70,8 @@ def main():
                         help="makes persona leave IPFS network after finishing video (default False)")
     parser.add_argument("-v", "--video-hash", dest="video_hash",
                         help="set hash of video watched by persona")
+    parser.add_argument("-r", type=int, dest="random_delay",
+                        help="set max of random delay, before persona's action (Default: 20s)")
 
     # Parse options
     args = parser.parse_args()
@@ -91,6 +97,8 @@ def main():
     if args.manual:
         subprocess.run(["google-chrome", "--no-first-run", "host/webplayer.html"])
     else:
+        sleep( random() * args.random_delay )
+
         # Add persona with IP to db
         log_persona(personaType.name)
 
