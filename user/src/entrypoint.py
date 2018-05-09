@@ -81,7 +81,7 @@ def main():
     options = args.persona_options
 
     # Handle Options
-    if args.ipfs:
+    if args.ipfs or not personaType == PersonaType.LEECHER:
         ipfs = Ipfs()
 
         if args.ipfsLocal:
