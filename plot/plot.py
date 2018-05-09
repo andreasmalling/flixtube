@@ -94,6 +94,20 @@ def main():
     client.close()
 
 
+def get_mean(l):
+    if len(l) == 1:
+        return l[0]
+    else:
+        return statistics.mean(l)
+
+
+def get_stdev(l):
+    if len(l) == 1:
+        return 0
+    else:
+        return statistics.stdev(l)
+
+
 def plot_user_data_seg(yname, users, collection):
     csv = CSVBuilder()
     last_seg = db[AUDIO].find_one(sort=[("seg", pymongo.DESCENDING)])["seg"]
@@ -107,12 +121,12 @@ def plot_user_data_seg(yname, users, collection):
         plt.plot(segments, user[yname], color="green")
         csv.add_plot(str(user["num"]), user[yname])
     #mean
-    means = [statistics.mean([user[yname][i] for user in users]) for i in range(last_seg+1)]
+    means = [get_mean([user[yname][i] for user in users]) for i in range(last_seg+1)]
     plt.plot(segments, means, color="red", label="mean")
     csv.add_plot("means", means)
 
     #stdev
-    stdev = [statistics.stdev([user[yname][i] for user in users]) for i in range(last_seg+1)]
+    stdev = [get_stdev([user[yname][i] for user in users]) for i in range(last_seg+1)]
     plt.plot(segments, stdev, color="blue", label="stdev")
     csv.add_plot("stdev", stdev)
 
@@ -138,11 +152,11 @@ def plot_user_data_seg_role(yname, users_b, collection):
             for res in db[collection].find({"ip": user["ip"], "responsecode": 200}).sort("seg", pymongo.ASCENDING):
                 if res["seg"] < len(user[yname]):
                     user[yname][res["seg"]] = res[yname]
-        means = [statistics.mean([user[yname][i] for user in role]) for i in range(last_seg+1)]
+        means = [get_mean([user[yname][i] for user in role]) for i in range(last_seg+1)]
         plt.plot(segments, means, label="mean:"+role[0]["type"])
         csv.add_plot("mean:"+role[0]["type"], means)
 
-        stdev = [statistics.stdev([user[yname][i] for user in role]) for i in range(last_seg+1)]
+        stdev = [get_stdev([user[yname][i] for user in role]) for i in range(last_seg+1)]
         plt.plot(segments, stdev, color="blue", label="stdev:"+role[0]["type"])
         csv.add_plot("stdev:"+role[0]["type"], stdev)
 
@@ -244,10 +258,10 @@ def plot_network_data_hist_role(yname1, yname2, users_b):
             res = db[NETWORK].find_one({"ip": user["ip"]}, sort=[("ts", pymongo.DESCENDING)])
             ys1 += [res["net"][yname1]]
             ys2 += [res["net"][yname2]]
-        ys1_m += [statistics.mean(ys1)]
-        ys2_m += [statistics.mean(ys2)]
-        ys1_s += [statistics.stdev(ys1)]
-        ys2_s += [statistics.stdev(ys2)]
+        ys1_m += [get_mean(ys1)]
+        ys2_m += [get_mean(ys2)]
+        ys1_s += [get_stdev(ys1)]
+        ys2_s += [get_stdev(ys2)]
 
     csv_m.add_plot("rx", ys1_m)
     csv_m.add_plot("tx", ys2_m)
@@ -287,8 +301,8 @@ def plot_user_stall(users):
         ys += [count]
     xs += ["mean"]
     xs += ["stdev"]
-    mean = statistics.mean(ys)
-    stdev = statistics.stdev(ys)
+    mean = get_mean(ys)
+    stdev = get_stdev(ys)
     ys += [mean, stdev]
     csv.add_plot("users", xs)
     csv.add_plot("stalls", ys)
@@ -376,8 +390,8 @@ def plot_user_stall_time_role(users_b):
             for elem in cursor:
                 res += elem["end"] - elem["start"]
             ys += [res]
-        ys_m += [statistics.mean(ys)]
-        ys_s += [statistics.stdev(ys)]
+        ys_m += [get_mean(ys)]
+        ys_s += [get_stdev(ys)]
 
     csv_m.add_plot("time", ys_m)
     plt.bar(xs, ys_m)
