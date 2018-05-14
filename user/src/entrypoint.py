@@ -5,7 +5,7 @@ from enum import Enum, unique
 from time import sleep
 
 import requests
-from numpy.random import random
+from numpy.random import uniform as random
 from retrying import retry
 from User import User
 from BingePersona import BingePersona
