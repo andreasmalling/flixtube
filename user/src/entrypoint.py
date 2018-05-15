@@ -97,7 +97,7 @@ def main():
     if args.manual:
         subprocess.run(["google-chrome", "--no-first-run", "host/webplayer.html"])
     else:
-        sleep( random() * args.random_delay )
+        sleep( 5 + random() * args.random_delay )   # 5 sec startup for adding network constraints
 
         # Add persona with IP to db
         log_persona(personaType.name)

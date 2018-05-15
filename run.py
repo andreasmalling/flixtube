@@ -10,14 +10,20 @@ default_env = Path.cwd() / "envs" / "default.env"
 mongo_env = Path.cwd() / "envs" / "mongo.env"
 compose_env_file = Path.cwd() / ".env"
 
+run_timestamp = datetime.datetime.now().isoformat('_')
 
 def main():
     setup_args()
 
+    # setup data dirs
+    Path('data/dump').mkdir(parents=True, exist_ok=True)
+    Path('data/plot').mkdir(parents=True, exist_ok=True)
+    Path('data/logs/' + run_timestamp).mkdir(parents=True, exist_ok=True)
+
     # Clean slate
     if args.clean:
         clean_db()
-    stop_docker_compose()
+    stop_containers()
 
     scales = {}
 
@@ -26,7 +32,7 @@ def main():
         print_title("SETUP OF STABLE NETWORK")
 
         scales = {**scales, **(import_scales(args.env_stable_file))}    # Merge dicts
-        proc = run_docker_compose(scales)
+        proc = run_containers(scales, "stable")
         try:
             proc.wait( args.setup_time )
         except TimeoutExpired:
@@ -35,16 +41,20 @@ def main():
     # Run exp
     print_title("SETUP OF EXP. NETWORK")
     scales = {**scales, **(import_scales(args.env_exp_file))}    # Merge dicts
-    proc = run_docker_compose(scales)
+    proc = run_containers(scales, "exp")
 
     # Possible timeout of exp
     if args.timeout > 0:
+
+        # Add network constraints
+        time.sleep(4)   # Give docker compose a buffer for starting containers (Users have 5s busy wait)
+        add_network_constraints(args.timeout + 30)  # 30 secs. buffer for bringing container setup down
         try:
             proc.wait( args.timeout )
         except TimeoutExpired:
             print("Timed out")
 
-        stop_docker_compose()
+        stop_containers()
     else:
         try:
             proc.wait()
@@ -61,9 +71,10 @@ def main():
     clean_exit()
 
 
-def stop_docker_compose():
+def stop_containers():
     print_title("STOPPING ALL CONTAINERS")
-    stop = Popen(["docker-compose", "down"])
+    log = open("data/logs/" + run_timestamp + "/down.txt", "a")
+    stop = Popen(["docker-compose", "down"], stdout=log, stderr=log)
     stop.wait()
 
 
@@ -76,7 +87,7 @@ def clean_db():
                   "--eval", "db.dropDatabase()"])
 
 
-def run_docker_compose(scales):
+def run_containers(scales, logname="0"):
 
     main_scale = [ "--scale", "bootstrap="  + scales.get("SCALE_BOOT", "0"),
                    "--scale", "host="       + scales.get("SCALE_HOST", "0"),
@@ -93,7 +104,8 @@ def run_docker_compose(scales):
                    "--scale", "user_5="     + scales.get("SCALE_USER_5", "0"),
                    "--scale", "user_6="     + scales.get("SCALE_USER_6", "0")]
 
-    return Popen(["docker-compose", "up", "--no-recreate"] + main_scale + user_scale, stdout=PIPE)
+    log = open("data/logs/" + run_timestamp + "/scale_" + logname +".txt", "a")
+    return Popen(["docker-compose", "up", "--no-recreate"] + main_scale + user_scale, stdout=log, stderr=log)
 
 
 def setup_args():
@@ -143,22 +155,32 @@ def setup_args():
     args = parser.parse_args()
 
 
+def add_network_constraints(duration,
+                            target="re2:user_([1-6]|seed|debug)_[0-9]*",
+                            rate="20mbit"):
+    print("Setting network at", rate, "for", target)
+    log = open("data/logs/" + run_timestamp + "/pumba.txt", "a")
+    Popen(["pumba", "netem", "--tc-image", "gaiadocker/iproute2", "--duration", str(duration) + "s", "rate", "--rate", rate, target], stdout=log, stderr=log)
+
+
 def clean_env():
     if compose_env_file.exists():
         compose_env_file.unlink()
 
 
 def docker_exec(container, command ):
+    print("Executing", *command, "on", container)
     count = 0
     while True:
-        proc = Popen(["docker-compose", "exec"] + [container] + command )
+        log = open("data/logs/" + run_timestamp + "/exec.txt", "a")
+        proc = Popen(["docker-compose", "exec"] + [container] + command, stdout=log, stderr=log )
         proc.communicate()
 
-        if proc.returncode == 0 or count > 10:
+        if proc.returncode == 0 or count > 20:
             break
         else:
             count += 1
-            print("Try:", count)
+            print("Try:", count, "/ 20")
             time.sleep(1)
 
     return proc
@@ -166,11 +188,11 @@ def docker_exec(container, command ):
 
 def run_mongo():
     mongo_scale = import_scales(mongo_env)
-    proc = run_docker_compose(mongo_scale)
+    proc = run_containers(mongo_scale, "mongo")
     return proc
 
 
-def export( filename=datetime.datetime.now().isoformat('_') ):
+def export( filename=run_timestamp ):
     print_title("Export FLiXTUBE DB")
     run_mongo()
     docker_exec( "mongo",
@@ -189,7 +211,7 @@ def clean_exit():
         clean_db()
 
     # Stop exp
-    stop_docker_compose()
+    stop_containers()
 
     exit(0)
 
@@ -222,7 +244,8 @@ def import_scales(env_file):
 
 def plot():
     print_title("GENERATE PLOTS")
-    proc = Popen(["docker-compose", "--file", "plot-compose.yml", "run", "plot"], stdout=PIPE)
+    log = open("data/logs/" + run_timestamp + "/plots.txt", "a")
+    proc = Popen(["docker-compose", "--file", "plot-compose.yml", "run", "plot"], stdout=log, stderr=log)
     proc.wait()
 
 def print_title(title):
