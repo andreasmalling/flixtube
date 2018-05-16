@@ -169,10 +169,10 @@ def clean_env():
 
 
 def docker_exec(container, command ):
-    print("Executing", *command, "on", container)
     count = 0
+    log = open("data/logs/" + run_timestamp + "/exec.txt", "a")
     while True:
-        log = open("data/logs/" + run_timestamp + "/exec.txt", "a")
+        print("Executing", *command, "on", container)
         proc = Popen(["docker-compose", "exec"] + [container] + command, stdout=log, stderr=log )
         proc.communicate()
 
@@ -180,7 +180,7 @@ def docker_exec(container, command ):
             break
         else:
             count += 1
-            print("Try:", count, "/ 20")
+            print("Try:", count, "/ 20 failed due to exit code", proc.returncode)
             time.sleep(1)
 
     return proc

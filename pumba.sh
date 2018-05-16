@@ -1,7 +1,8 @@
 #!/bin/bash
 USERS='re2:user_[1-6]_[0-9]*'
 ALL_USERS='re2:user_([1-6]|seed|debug)_[0-9]*'
-SEEDS="$ALL_USERS"
+CONTAINERS="$ALL_USERS"
+
 TCIMG=gaiadocker/iproute2
 DURATION=10m
 
@@ -43,9 +44,7 @@ kill_pumba()
 	killall pumba
 	exit 0
 }
-
 trap kill_pumba SIGINT
 
-slow_network $SEEDS ${1:- 20mbit}
-
+slow_network $CONTAINERS ${1:- 20mbit}
 wait $RATE_PID
