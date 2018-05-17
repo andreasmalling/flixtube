@@ -13,17 +13,16 @@ compose_env_file = Path.cwd() / ".env"
 run_timestamp = datetime.datetime.now().isoformat('_')
 
 def main():
+    # Parse run options
     setup_args()
 
-    # setup data dirs
+    # Setup data dirs
     Path('data/dump').mkdir(parents=True, exist_ok=True)
     Path('data/plot').mkdir(parents=True, exist_ok=True)
     Path('data/logs/' + run_timestamp).mkdir(parents=True, exist_ok=True)
 
     # Clean slate
-    if args.clean:
-        clean_db()
-    stop_containers()
+    clean_up
 
     scales = {}
 
@@ -68,44 +67,8 @@ def main():
     if args.export:
         export()
 
-    clean_exit()
-
-
-def stop_containers():
-    print_title("STOPPING ALL CONTAINERS")
-    log = open("data/logs/" + run_timestamp + "/down.txt", "a")
-    stop = Popen(["docker-compose", "down"], stdout=log, stderr=log)
-    stop.wait()
-
-
-def clean_db():
-    print_title("DELETE FLiXTUBE DB")
-    run_mongo()
-    docker_exec("mongo",
-                [ "mongo",
-                  "flixtube_db",
-                  "--eval", "db.dropDatabase()"])
-
-
-def run_containers(scales, logname="0"):
-
-    main_scale = [ "--scale", "bootstrap="  + scales.get("SCALE_BOOT", "0"),
-                   "--scale", "host="       + scales.get("SCALE_HOST", "0"),
-                   "--scale", "mongo="      + scales.get("SCALE_MONGO", "0"),
-                   "--scale", "metric="     + scales.get("SCALE_METRIC", "0"),
-                   "--scale", "network="    + scales.get("SCALE_NETWORK", "0"),
-                   "--scale", "user_seed="  + scales.get("SCALE_SEED", "0"),
-                   "--scale", "user_debug=" + scales.get("SCALE_DEBUG", "0")]
-
-    user_scale = [ "--scale", "user_1="     + scales.get("SCALE_USER_1", "0"),
-                   "--scale", "user_2="     + scales.get("SCALE_USER_2", "0"),
-                   "--scale", "user_3="     + scales.get("SCALE_USER_3", "0"),
-                   "--scale", "user_4="     + scales.get("SCALE_USER_4", "0"),
-                   "--scale", "user_5="     + scales.get("SCALE_USER_5", "0"),
-                   "--scale", "user_6="     + scales.get("SCALE_USER_6", "0")]
-
-    log = open("data/logs/" + run_timestamp + "/scale_" + logname +".txt", "a")
-    return Popen(["docker-compose", "up", "--no-recreate"] + main_scale + user_scale, stdout=log, stderr=log)
+    clean_up()
+    exit(0)
 
 
 def setup_args():
@@ -155,65 +118,33 @@ def setup_args():
     args = parser.parse_args()
 
 
-def add_network_constraints(duration,
-                            target="re2:user_([1-6]|seed|debug)_[0-9]*",
-                            rate="20mbit"):
-    print("Setting network at", rate, "for", target)
-    log = open("data/logs/" + run_timestamp + "/pumba.txt", "a")
-    Popen(["pumba", "netem", "--tc-image", "gaiadocker/iproute2", "--duration", str(duration) + "s", "rate", "--rate", rate, target], stdout=log, stderr=log)
+def run_containers(scales, logname="0"):
+
+    main_scale = [ "--scale", "bootstrap="  + scales.get("SCALE_BOOT", "0"),
+                   "--scale", "host="       + scales.get("SCALE_HOST", "0"),
+                   "--scale", "mongo="      + scales.get("SCALE_MONGO", "0"),
+                   "--scale", "metric="     + scales.get("SCALE_METRIC", "0"),
+                   "--scale", "network="    + scales.get("SCALE_NETWORK", "0"),
+                   "--scale", "user_seed="  + scales.get("SCALE_SEED", "0"),
+                   "--scale", "user_debug=" + scales.get("SCALE_DEBUG", "0")]
+
+    user_scale = [ "--scale", "user_1="     + scales.get("SCALE_USER_1", "0"),
+                   "--scale", "user_2="     + scales.get("SCALE_USER_2", "0"),
+                   "--scale", "user_3="     + scales.get("SCALE_USER_3", "0"),
+                   "--scale", "user_4="     + scales.get("SCALE_USER_4", "0"),
+                   "--scale", "user_5="     + scales.get("SCALE_USER_5", "0"),
+                   "--scale", "user_6="     + scales.get("SCALE_USER_6", "0")]
+
+    log = open("data/logs/" + run_timestamp + "/scale_" + logname +".txt", "a")
+    return Popen(["docker-compose", "up", "--no-recreate"] + main_scale + user_scale, stdout=log, stderr=log)
 
 
-def clean_env():
-    if compose_env_file.exists():
-        compose_env_file.unlink()
+def stop_containers():
+    print_title("STOPPING ALL CONTAINERS")
+    log = open("data/logs/" + run_timestamp + "/down.txt", "a")
+    stop = Popen(["docker-compose", "down"], stdout=log, stderr=log)
+    stop.wait()
 
-
-def docker_exec(container, command ):
-    print("Executing", *command, "on", container)
-    count = 0
-    while True:
-        log = open("data/logs/" + run_timestamp + "/exec.txt", "a")
-        proc = Popen(["docker-compose", "exec"] + [container] + command, stdout=log, stderr=log )
-        proc.communicate()
-
-        if proc.returncode == 0 or count > 20:
-            break
-        else:
-            count += 1
-            print("Try:", count, "/ 20")
-            time.sleep(1)
-
-    return proc
-
-
-def run_mongo():
-    mongo_scale = import_scales(mongo_env)
-    proc = run_containers(mongo_scale, "mongo")
-    return proc
-
-
-def export( filename=run_timestamp ):
-    print_title("Export FLiXTUBE DB")
-    run_mongo()
-    docker_exec( "mongo",
-                [ "mongodump",
-                  "--db", "flixtube_db",
-                  "--gzip",
-                  "--archive=" + "/data/dump/" + filename + ".gz"])
-
-    print("Export done.")
-
-def clean_exit():
-    # No such thing as too much cleaning!
-    clean_env()
-
-    if args.clean:
-        clean_db()
-
-    # Stop exp
-    stop_containers()
-
-    exit(0)
 
 def import_scales(env_file):
     scales = {}
@@ -233,7 +164,8 @@ def import_scales(env_file):
     # Fail safe of if no scales found
     if scales == {}:
         print("No scales found in env:", env_file.name)
-        clean_exit()
+        clean_up()
+        exit(0)
     else:
         print("Scales found in env:", env_file.name)
         for scale in scales:
@@ -242,11 +174,81 @@ def import_scales(env_file):
     return scales
 
 
+def add_network_constraints(duration,
+                            target="re2:user_([1-6]|seed|debug)_[0-9]*",
+                            rate="20mbit"):
+    print("Setting network at", rate, "for", target)
+    log = open("data/logs/" + run_timestamp + "/pumba.txt", "a")
+    Popen(["pumba", "netem", "--tc-image", "gaiadocker/iproute2", "--duration", str(duration) + "s", "rate", "--rate", rate, target], stdout=log, stderr=log)
+
+
+def docker_exec(container, command ):
+    print("Executing", *command, "on", container)
+    count = 0
+    while True:
+        log = open("data/logs/" + run_timestamp + "/exec.txt", "a")
+        proc = Popen(["docker-compose", "exec"] + [container] + command, stdout=PIPE, stderr=log )
+        proc.communicate()
+
+        if proc.returncode == 0 or count > 20:
+            break
+        else:
+            count += 1
+            print("Try:", count, "/ 20")
+            time.sleep(1)
+
+    return proc
+
+
+def run_db():
+    mongo_scale = import_scales(mongo_env)
+    proc = run_containers(mongo_scale, "mongo")
+    return proc
+
+
+def clean_env():
+    if compose_env_file.exists():
+        compose_env_file.unlink()
+
+
+def clean_db():
+    print_title("DELETE FLiXTUBE DB")
+    run_db()
+    docker_exec("mongo",
+                [ "mongo",
+                  "flixtube_db",
+                  "--eval", "db.dropDatabase()"])
+
+
+def clean_up():
+    # No such thing as too much cleaning!
+    clean_env()
+
+    if args.clean:
+        clean_db()
+
+    # Stop exp
+    stop_containers()
+
+
 def plot():
     print_title("GENERATE PLOTS")
     log = open("data/logs/" + run_timestamp + "/plots.txt", "a")
     proc = Popen(["docker-compose", "--file", "plot-compose.yml", "run", "plot"], stdout=log, stderr=log)
     proc.wait()
+
+
+def export( filename=run_timestamp ):
+    print_title("Export FLiXTUBE DB")
+    run_db()
+    docker_exec( "mongo",
+                [ "mongodump",
+                  "--db", "flixtube_db",
+                  "--gzip",
+                  "--archive=" + "/data/dump/" + filename + ".gz"])
+
+    print("Export done.")
+
 
 def print_title(title):
     print('\033[95m# == ' + title + ' == #\033[0m')
