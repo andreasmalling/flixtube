@@ -12,6 +12,7 @@ compose_env_file = Path.cwd() / ".env"
 
 run_timestamp = datetime.datetime.now().isoformat('_')
 
+
 def main():
     # Parse run options
     setup_args()
@@ -22,7 +23,7 @@ def main():
     Path('data/logs/' + run_timestamp).mkdir(parents=True, exist_ok=True)
 
     # Clean slate
-    clean_up
+    clean_up()
 
     scales = {}
 
@@ -33,7 +34,7 @@ def main():
         scales = {**scales, **(import_scales(args.env_stable_file))}    # Merge dicts
         proc = run_containers(scales, "stable")
         try:
-            proc.wait( args.setup_time )
+            proc.wait(args.setup_time)
         except TimeoutExpired:
             print("Timed out")
 
@@ -42,24 +43,24 @@ def main():
     scales = {**scales, **(import_scales(args.env_exp_file))}    # Merge dicts
     proc = run_containers(scales, "exp")
 
-    # Constrain network
+    # Add network constraints
+    time.sleep(4)   # Give docker compose a buffer for starting all containers (Users have 5s busy wait)
+
     if args.net_rate != 0:
-        add_network_rate(args.timeout + 30, rate=args.net_rate)  # 30 secs. buffer for bringing container setup down
+        add_network_rate(args.exp_time + 30, rate=args.net_rate)  # 30 secs. buffer for bringing container setup down
+
     if args.net_latency is not None:
-        add_network_latency(args.timeout + 30, delay=args.net_latency) # 30 secs. buffer for bringing container setup down
+        add_network_latency(args.exp_time + 30, delay=args.net_latency)   # 30 secs. buffer again
 
-    # Possible timeout of exp
-    if args.timeout > 0:
-
-        # Add network constraints
-        time.sleep(4)   # Give docker compose a buffer for starting containers (Users have 5s busy wait)
+    # Timeout of exp
+    if args.exp_time > 0:
         try:
-            proc.wait( args.timeout )
+            proc.wait(args.exp_time)
         except TimeoutExpired:
             print("Timed out")
 
         stop_containers()
-    else:
+    else:   # or run until killed
         try:
             proc.wait()
         except KeyboardInterrupt:
@@ -88,7 +89,8 @@ def setup_args():
                         dest="env_stable_file",
                         type=Path,
                         default=default_env,
-                        help="set env file for stable network. (Default: " + str(default_env.relative_to(Path.cwd())) + ")")
+                        help="set env file for stable network. (Default: " +
+                             str(default_env.relative_to(Path.cwd())) + ")")
 
     parser.add_argument("-s",
                         dest="setup_time",
@@ -97,16 +99,26 @@ def setup_args():
                         help="set time given to start stable network, before invoking exp. (Default: 30 seconds)")
 
     parser.add_argument("-t",
-                        dest="timeout",
+                        dest="exp_time",
                         type=int,
                         default="0",
                         help="set timeout of experiment in seconds")
 
-    parser.add_argument("-e",
+    parser.add_argument("-l",
+                        type=int,
+                        dest="net_latency",
+                        help="add latency in ms to all users.")
+
+    parser.add_argument("-r",
+                        dest="net_rate",
+                        default="20mbit",
+                        help="add data rate for all users. Suffix with [g|m|k]bit")
+
+    parser.add_argument("--no-export",
                         dest="export",
-                        action="store_true",
-                        default=False,
-                        help="export results")
+                        action="store_false",
+                        default=True,
+                        help="don't export the results")
 
     parser.add_argument("--no-clean",
                         dest="clean",
@@ -119,16 +131,6 @@ def setup_args():
                         action="store_false",
                         default=True,
                         help="don't plot the results")
-
-    parser.add_argument("-l",
-                        type=int,
-                        dest="net_latency",
-                        help="add latency in ms to all users.")
-
-    parser.add_argument("-r",
-                        dest="net_rate",
-                        default="20mbit",
-                        help="add data rate for all users. Suffix with [g|m|k]bit")
 
     args = parser.parse_args()
 
@@ -150,7 +152,7 @@ def run_containers(scales, logname="0"):
                    "--scale", "user_5="     + scales.get("SCALE_USER_5", "0"),
                    "--scale", "user_6="     + scales.get("SCALE_USER_6", "0")]
 
-    log = open("data/logs/" + run_timestamp + "/scale_" + logname +".txt", "a")
+    log = open("data/logs/" + run_timestamp + "/scale_" + logname + ".txt", "a")
     return Popen(["docker-compose", "up", "--no-recreate"] + main_scale + user_scale, stdout=log, stderr=log)
 
 
@@ -219,12 +221,12 @@ def add_network_latency(duration,
            target], stdout=log, stderr=log)
 
 
-def docker_exec(container, command ):
+def docker_exec(container, command):
     print("Executing", *command, "on", container)
     count = 0
     while True:
         log = open("data/logs/" + run_timestamp + "/exec.txt", "a")
-        proc = Popen(["docker-compose", "exec"] + [container] + command, stdout=PIPE, stderr=log )
+        proc = Popen(["docker-compose", "exec"] + [container] + command, stdout=PIPE, stderr=log)
         proc.communicate()
 
         if proc.returncode == 0 or count > 20:
@@ -252,9 +254,9 @@ def clean_db():
     print_title("DELETE FLiXTUBE DB")
     run_db()
     docker_exec("mongo",
-                [ "mongo",
-                  "flixtube_db",
-                  "--eval", "db.dropDatabase()"])
+                ["mongo",
+                 "flixtube_db",
+                 "--eval", "db.dropDatabase()"])
 
 
 def clean_up():
@@ -275,20 +277,21 @@ def plot():
     proc.wait()
 
 
-def export( filename=run_timestamp ):
+def export(filename=run_timestamp):
     print_title("Export FLiXTUBE DB")
     run_db()
-    docker_exec( "mongo",
-                [ "mongodump",
-                  "--db", "flixtube_db",
-                  "--gzip",
-                  "--archive=" + "/data/dump/" + filename + ".gz"])
+    docker_exec("mongo",
+                ["mongodump",
+                 "--db", "flixtube_db",
+                 "--gzip",
+                 "--archive=" + "/data/dump/" + filename + ".gz"])
 
     print("Export done.")
 
 
 def print_title(title):
     print('\033[95m# == ' + title + ' == #\033[0m')
+
 
 if __name__ == "__main__":
     main()
