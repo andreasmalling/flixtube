@@ -3,7 +3,7 @@
 import argparse
 import datetime
 import time
-from subprocess import PIPE, Popen, TimeoutExpired
+from subprocess import Popen, TimeoutExpired
 from pathlib import Path
 
 default_env = Path.cwd() / "envs" / "default.env"
@@ -222,18 +222,18 @@ def add_network_latency(duration,
 
 
 def docker_exec(container, command):
-    print("Executing", *command, "on", container)
     count = 0
+    log = open("data/logs/" + run_timestamp + "/exec.txt", "a")
     while True:
-        log = open("data/logs/" + run_timestamp + "/exec.txt", "a")
-        proc = Popen(["docker-compose", "exec"] + [container] + command, stdout=PIPE, stderr=log)
+        print("Executing", *command, "on", container)
+        proc = Popen(["docker-compose", "exec"] + [container] + command, stdout=log, stderr=log)
         proc.communicate()
 
         if proc.returncode == 0 or count > 20:
             break
         else:
             count += 1
-            print("Try:", count, "/ 20")
+            print("Try:", count, "/ 20 failed due to exit code", proc.returncode)
             time.sleep(1)
 
     return proc
