@@ -36,18 +36,23 @@ def main():
             proc.wait( args.setup_time )
         except TimeoutExpired:
             print("Timed out")
-    
+
     # Run exp
     print_title("SETUP OF EXP. NETWORK")
     scales = {**scales, **(import_scales(args.env_exp_file))}    # Merge dicts
     proc = run_containers(scales, "exp")
+
+    # Constrain network
+    if args.net_rate != 0:
+        add_network_rate(args.timeout + 30, rate=args.net_rate)  # 30 secs. buffer for bringing container setup down
+    if args.net_latency is not None:
+        add_network_latency(args.timeout + 30, delay=args.net_latency) # 30 secs. buffer for bringing container setup down
 
     # Possible timeout of exp
     if args.timeout > 0:
 
         # Add network constraints
         time.sleep(4)   # Give docker compose a buffer for starting containers (Users have 5s busy wait)
-        add_network_constraints(args.timeout + 30)  # 30 secs. buffer for bringing container setup down
         try:
             proc.wait( args.timeout )
         except TimeoutExpired:
@@ -115,6 +120,16 @@ def setup_args():
                         default=True,
                         help="don't plot the results")
 
+    parser.add_argument("-l",
+                        type=int,
+                        dest="net_latency",
+                        help="add latency in ms to all users.")
+
+    parser.add_argument("-r",
+                        dest="net_rate",
+                        default="20mbit",
+                        help="add data rate for all users. Suffix with [g|m|k]bit")
+
     args = parser.parse_args()
 
 
@@ -174,12 +189,34 @@ def import_scales(env_file):
     return scales
 
 
-def add_network_constraints(duration,
-                            target="re2:user_([1-6]|seed|debug)_[0-9]*",
-                            rate="20mbit"):
+def add_network_rate(duration,
+                     rate,
+                     target="re2:user_([1-6]|seed|debug)_[0-9]*"):
     print("Setting network at", rate, "for", target)
-    log = open("data/logs/" + run_timestamp + "/pumba.txt", "a")
-    Popen(["pumba", "netem", "--tc-image", "gaiadocker/iproute2", "--duration", str(duration) + "s", "rate", "--rate", rate, target], stdout=log, stderr=log)
+    log = open("data/logs/" + run_timestamp + "/pumba_rate.txt", "a")
+    Popen(["pumba",
+           "netem",
+           "--tc-image", "gaiadocker/iproute2",
+           "--duration", str(duration) + "s",
+           "rate",
+           "--rate", rate,
+           target], stdout=log, stderr=log)
+
+
+def add_network_latency(duration,
+                        delay,
+                        jitter=10,
+                        target="re2:user_([1-6]|seed|debug)_[0-9]*"):
+    print("Setting network latency at", delay, "+/-", jitter, "for", target)
+    log = open("data/logs/" + run_timestamp + "/pumba_latency.txt", "a")
+    Popen(["pumba",
+           "netem",
+           "--tc-image", "gaiadocker/iproute2",
+           "--duration", str(duration) + "s",
+           "delay",
+           "--time", str(delay),
+           "--jitter", str(jitter),
+           target], stdout=log, stderr=log)
 
 
 def docker_exec(container, command ):
