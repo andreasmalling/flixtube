@@ -96,13 +96,13 @@ def setup_args():
                         dest="setup_time",
                         type=int,
                         default="30",
-                        help="set time given to start stable network, before invoking exp. (Default: 30 seconds)")
+                        help="set time given to start stable network in seconds, before invoking exp. (Default: 30)")
 
     parser.add_argument("-t",
                         dest="exp_time",
                         type=int,
-                        default="0",
-                        help="set timeout of experiment in seconds")
+                        default="240",
+                        help="set timeout of experiment in seconds. (Default: 240)")
 
     parser.add_argument("-l",
                         type=int,
@@ -112,7 +112,7 @@ def setup_args():
     parser.add_argument("-r",
                         dest="net_rate",
                         default="20mbit",
-                        help="add data rate for all users. Suffix with [g|m|k]bit")
+                        help="limit bandwidth rate for all users. Suffix with [g|m|k]bit. (Default: 20mbit)")
 
     parser.add_argument("--no-export",
                         dest="export",
