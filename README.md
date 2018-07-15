@@ -1,5 +1,5 @@
 # Flixtube: P2P streaming
-Project made as the Master Thesis ["Utilizing IPFS as a content provider for DASH video streaming"](https://github.com/andreasmalling/Master-Thesis).
+Project made for the Master Thesis ["Utilizing IPFS as a content provider for DASH video streaming"](https://github.com/andreasmalling/Master-Thesis).
 
 ## Getting started
 1. Install *Docker*, *Docker Compose*, *Pumba* and *Python 3.5*
